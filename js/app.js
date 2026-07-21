@@ -22,7 +22,8 @@ export {
 
 // ---------- Nav bar (shared across every page) ----------
 const NAV_LINKS = [
-  ["/index.html", "Leaderboard"],
+  ["/index.html", "Home"],
+  ["/pages/leaderboard.html", "Leaderboard"],
   ["/pages/attendance.html", "Attendance"],
   ["/pages/info.html", "Info Hub"],
   ["/pages/spotlights.html", "Spotlights"],

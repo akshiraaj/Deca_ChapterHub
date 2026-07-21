@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard — DECA Chapter Hub</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+
+<div class="page">
+  <p class="eyebrow">Live Standings</p>
+  <h1 class="title">Leaderboard</h1>
+  <p class="lede">Rankings update as execs log points from meetings, competitions, and case studies. Switch between individual and cluster views below.</p>
+
+  <div class="board-tabs">
+    <button class="board-tab active" data-scope="cluster">Clusters</button>
+    <button class="board-tab" data-scope="individual">Individuals</button>
+  </div>
+
+  <div class="board-wrap" id="board"></div>
+  <div class="empty hidden" id="empty">
+    <div class="empty-title">No points logged yet</div>
+    <p class="muted">Once an exec awards the first points, standings will show up here.</p>
+  </div>
+</div>
+
+<footer>DECA Chapter Hub — built for members, by members.</footer>
+
+<script type="module">
+import { db, collection, getDocs, renderNav, watchAuth } from "/js/app.js";
+
+renderNav("/pages/leaderboard.html");
+watchAuth(()=>{});
+
+const boardEl = document.getElementById("board");
+const emptyEl = document.getElementById("empty");
+let scope = "cluster";
+
+async function loadPoints(){
+  const snap = await getDocs(collection(db, "points"));
+  const clusterTotals = {};
+  const individualTotals = {};
+
+  snap.forEach(d=>{
+    const p = d.data();
+    const pts = Number(p.points) || 0;
+    if(p.cluster){
+      clusterTotals[p.cluster] = (clusterTotals[p.cluster] || 0) + pts;
+    }
+    if(p.scope === "individual" && p.uid){
+      if(!individualTotals[p.uid]){
+        individualTotals[p.uid] = { name: p.name || "Member", cluster: p.cluster || "", points: 0 };
+      }
+      individualTotals[p.uid].points += pts;
+    }
+  });
+
+  return { clusterTotals, individualTotals };
+}
+
+function renderBoard(rows, subLabel){
+  if(rows.length === 0){
+    boardEl.classList.add("hidden");
+    emptyEl.classList.remove("hidden");
+    return;
+  }
+  boardEl.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
+  boardEl.innerHTML = rows.map((r, i)=>{
+    const rank = i+1;
+    return `
+      <div class="rank-row rank-${rank <= 3 ? rank : ""}">
+        <div class="rank-num">${rank}</div>
+        <div>
+          <div class="rank-name">${r.name}</div>
+          <div class="rank-sub">${r.sub}</div>
+        </div>
+        <div class="rank-pts"><span class="label">${subLabel}</span>${r.points} pts</div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function render(){
+  const { clusterTotals, individualTotals } = await loadPoints();
+
+  if(scope === "cluster"){
+    const rows = Object.entries(clusterTotals)
+      .sort((a,b)=>b[1]-a[1])
+      .map(([name, points])=>({ name, sub: "Cluster", points }));
+    renderBoard(rows, "Points");
+  } else {
+    const rows = Object.values(individualTotals)
+      .sort((a,b)=>b.points-a.points)
+      .map(m=>({ name: m.name, sub: m.cluster, points: m.points }));
+    renderBoard(rows, "Points");
+  }
+}
+
+document.querySelectorAll(".board-tab").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".board-tab").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    scope = btn.dataset.scope;
+    render();
+  });
+});
+
+render();
+</script>
+</body>
+</html>
