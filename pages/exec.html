@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exec Dashboard — DECA Chapter Hub</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+
+<div class="page">
+  <p class="eyebrow">Exec Only</p>
+  <h1 class="title">Exec Dashboard</h1>
+  <p class="lede">Enter the exec code to award points, log attendance, post spotlights, and view feedback.</p>
+
+  <!-- GATE -->
+  <div class="card" id="gate" style="max-width:420px;">
+    <div id="gate-msg" class="msg"></div>
+    <form id="gate-form">
+      <div class="field">
+        <label for="gate-cluster">Your cluster</label>
+        <select id="gate-cluster" required></select>
+      </div>
+      <div class="field">
+        <label for="gate-code">Exec code</label>
+        <input type="password" id="gate-code" required placeholder="Enter the code given to execs">
+      </div>
+      <button class="btn btn-crimson" type="submit" style="width:100%">Enter exec mode</button>
+    </form>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dash" class="hidden">
+    <div class="board-tabs">
+      <button class="board-tab active" data-tab="points">Award Points</button>
+      <button class="board-tab" data-tab="attendance">Attendance</button>
+      <button class="board-tab" data-tab="spotlight">Spotlight</button>
+      <button class="board-tab" data-tab="inbox">Feedback Inbox</button>
+    </div>
+
+    <!-- Award points -->
+    <div class="tab-panel" data-panel="points">
+      <div class="card" style="max-width:520px;">
+        <div id="points-msg" class="msg"></div>
+        <form id="points-form">
+          <div class="field">
+            <label>Award to</label>
+            <select id="points-scope">
+              <option value="cluster">Whole cluster</option>
+              <option value="individual">Individual member</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="points-cluster">Cluster</label>
+            <select id="points-cluster" required></select>
+          </div>
+          <div class="field hidden" id="points-name-field">
+            <label for="points-name">Member name</label>
+            <input type="text" id="points-name" placeholder="Jordan Lee">
+          </div>
+          <div class="field">
+            <label for="points-amount">Points</label>
+            <input type="number" id="points-amount" required placeholder="e.g. 10">
+          </div>
+          <div class="field">
+            <label for="points-reason">Reason</label>
+            <input type="text" id="points-reason" required placeholder="e.g. Attended workshop, placed 1st in role-play">
+          </div>
+          <button class="btn" type="submit">Award points</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Attendance -->
+    <div class="tab-panel hidden" data-panel="attendance">
+      <div class="card" style="max-width:520px;">
+        <div id="att-msg" class="msg"></div>
+        <form id="att-form">
+          <div class="field">
+            <label for="att-name">Member name</label>
+            <input type="text" id="att-name" required placeholder="Jordan Lee">
+          </div>
+          <div class="field">
+            <label for="att-cluster">Cluster</label>
+            <select id="att-cluster" required></select>
+          </div>
+          <div class="field">
+            <label for="att-event">Event / meeting</label>
+            <input type="text" id="att-event" required placeholder="e.g. General Meeting #4">
+          </div>
+          <div class="field">
+            <label for="att-status">Status</label>
+            <select id="att-status">
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+              <option value="excused">Excused</option>
+            </select>
+          </div>
+          <button class="btn" type="submit">Log attendance</button>
+        </form>
+      </div>
+      <div class="section-title">Recent Records</div>
+      <table class="data" id="att-table">
+        <thead><tr><th>Name</th><th>Cluster</th><th>Event</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Spotlight -->
+    <div class="tab-panel hidden" data-panel="spotlight">
+      <div class="card" style="max-width:520px;">
+        <div id="spot-msg" class="msg"></div>
+        <form id="spot-form">
+          <div class="field">
+            <label for="spot-name">Member name</label>
+            <input type="text" id="spot-name" required placeholder="Jordan Lee">
+          </div>
+          <div class="field">
+            <label for="spot-note">Why they're being featured</label>
+            <input type="text" id="spot-note" required placeholder="e.g. Led the chapter to 1st place at States">
+          </div>
+          <button class="btn" type="submit">Post spotlight</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Inbox -->
+    <div class="tab-panel hidden" data-panel="inbox">
+      <div class="section-title">Feedback Inbox</div>
+      <div id="inbox-list"></div>
+    </div>
+  </div>
+</div>
+
+<footer>DECA Chapter Hub — built for members, by members.</footer>
+
+<script type="module">
+import {
+  auth, db, CLUSTERS, doc, setDoc, getDoc, addDoc, collection,
+  getDocs, query, orderBy, serverTimestamp, signInAnonymously,
+  renderNav, showMsg, fmtDate
+} from "../js/app.js";
+
+renderNav("");
+
+// populate cluster dropdowns
+["gate-cluster","points-cluster","att-cluster"].forEach(id=>{
+  const sel = document.getElementById(id);
+  CLUSTERS.forEach(c=>{
+    const opt = document.createElement("option");
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+});
+
+const gateEl = document.getElementById("gate");
+const dashEl = document.getElementById("dash");
+let currentExecCluster = null;
+
+// ---------- Gate ----------
+document.getElementById("gate-form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById("gate-msg");
+  const cluster = document.getElementById("gate-cluster").value;
+  const code = document.getElementById("gate-code").value;
+
+  try{
+    if(!auth.currentUser){
+      await signInAnonymously(auth);
+    }
+    const uid = auth.currentUser.uid;
+    // Try to read existing exec doc first (in case already elevated this session)
+    const existing = await getDoc(doc(db, "execs", uid));
+    if(!existing.exists()){
+      await setDoc(doc(db, "execs", uid), { code, cluster, createdAt: serverTimestamp() });
+    }
+    currentExecCluster = cluster;
+    gateEl.classList.add("hidden");
+    dashEl.classList.remove("hidden");
+    loadAttendance();
+    loadInbox();
+  } catch(err){
+    showMsg(msg, "Incorrect code, or you're not authorized. Check with your chapter advisor.", "error");
+  }
+});
+
+// ---------- Tabs ----------
+document.querySelectorAll(".board-tab").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".board-tab").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.add("hidden"));
+    document.querySelector(`.tab-panel[data-panel="${btn.dataset.tab}"]`).classList.remove("hidden");
+  });
+});
+
+// ---------- Points ----------
+document.getElementById("points-scope").addEventListener("change", (e)=>{
+  document.getElementById("points-name-field").classList.toggle("hidden", e.target.value !== "individual");
+});
+
+document.getElementById("points-form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById("points-msg");
+  const scope = document.getElementById("points-scope").value;
+  const cluster = document.getElementById("points-cluster").value;
+  const name = document.getElementById("points-name").value.trim();
+  const points = Number(document.getElementById("points-amount").value);
+  const reason = document.getElementById("points-reason").value.trim();
+
+  try{
+    await addDoc(collection(db, "points"), {
+      scope, cluster,
+      name: scope === "individual" ? name : cluster,
+      points, reason,
+      awardedBy: currentExecCluster,
+      createdAt: serverTimestamp()
+    });
+    showMsg(msg, "Points awarded — leaderboard updated.", "success");
+    e.target.reset();
+  } catch(err){
+    showMsg(msg, err.message.replace("Firebase: ",""), "error");
+  }
+});
+
+// ---------- Attendance ----------
+document.getElementById("att-form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById("att-msg");
+  const name = document.getElementById("att-name").value.trim();
+  const cluster = document.getElementById("att-cluster").value;
+  const event = document.getElementById("att-event").value.trim();
+  const status = document.getElementById("att-status").value;
+
+  try{
+    await addDoc(collection(db, "attendance"), {
+      name, cluster, event, status,
+      recordedBy: currentExecCluster,
+      createdAt: serverTimestamp()
+    });
+    showMsg(msg, "Attendance logged.", "success");
+    e.target.reset();
+    loadAttendance();
+  } catch(err){
+    showMsg(msg, err.message.replace("Firebase: ",""), "error");
+  }
+});
+
+async function loadAttendance(){
+  const tbody = document.querySelector("#att-table tbody");
+  const snap = await getDocs(query(collection(db, "attendance"), orderBy("createdAt","desc")));
+  const rows = [];
+  snap.forEach(d=>{
+    const r = d.data();
+    rows.push(`<tr>
+      <td>${r.name}</td><td>${r.cluster}</td><td>${r.event}</td>
+      <td><span class="pill pill-${r.status}">${r.status}</span></td>
+      <td>${fmtDate(r.createdAt)}</td>
+    </tr>`);
+  });
+  tbody.innerHTML = rows.slice(0,25).join("") || `<tr><td colspan="5" class="muted">No records yet.</td></tr>`;
+}
+
+// ---------- Spotlight ----------
+document.getElementById("spot-form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById("spot-msg");
+  const name = document.getElementById("spot-name").value.trim();
+  const note = document.getElementById("spot-note").value.trim();
+  try{
+    await addDoc(collection(db, "spotlights"), { name, note, createdAt: serverTimestamp() });
+    showMsg(msg, "Spotlight posted.", "success");
+    e.target.reset();
+  } catch(err){
+    showMsg(msg, err.message.replace("Firebase: ",""), "error");
+  }
+});
+
+// ---------- Inbox ----------
+async function loadInbox(){
+  const list = document.getElementById("inbox-list");
+  const snap = await getDocs(query(collection(db, "feedback"), orderBy("createdAt","desc")));
+  const items = [];
+  snap.forEach(d=>{
+    const f = d.data();
+    items.push(`
+      <div class="card" style="margin-bottom:12px;">
+        <div class="flex-between">
+          <strong>${f.anonymous ? "Anonymous" : (f.name || "Member")}</strong>
+          <span class="muted">${fmtDate(f.createdAt)}</span>
+        </div>
+        <p style="margin:8px 0 0;">${f.message}</p>
+      </div>
+    `);
+  });
+  list.innerHTML = items.join("") || `<div class="empty"><div class="empty-title">Inbox is empty</div><p class="muted">Submissions from the feedback form will show up here.</p></div>`;
+}
+</script>
+</body>
+</html>

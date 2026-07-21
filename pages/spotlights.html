@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spotlights — DECA Chapter Hub</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+
+<div class="page">
+  <p class="eyebrow">Recognition</p>
+  <h1 class="title">Member Spotlights</h1>
+  <p class="lede">Members featured by execs for leadership, growth, or standout results.</p>
+
+  <div id="list"></div>
+  <div class="empty hidden" id="empty">
+    <div class="empty-title">No spotlights yet</div>
+    <p class="muted">Execs can post one from the exec dashboard.</p>
+  </div>
+</div>
+
+<footer>DECA Chapter Hub — built for members, by members.</footer>
+
+<script type="module">
+import { db, collection, getDocs, query, orderBy, renderNav, watchAuth, fmtDate } from "../js/app.js";
+
+renderNav("/pages/spotlights.html");
+watchAuth(()=>{});
+
+async function load(){
+  const list = document.getElementById("list");
+  const empty = document.getElementById("empty");
+  const snap = await getDocs(query(collection(db, "spotlights"), orderBy("createdAt","desc")));
+  const items = [];
+  let i = 0;
+  snap.forEach(d=>{
+    const s = d.data();
+    i++;
+    items.push(`
+      <div class="spotlight-card">
+        <div class="spotlight-badge">★</div>
+        <div>
+          <div class="spotlight-name">${s.name}</div>
+          <div class="spotlight-note">${s.note}</div>
+          <div class="muted" style="color:#8fa0bb; margin-top:6px;">${fmtDate(s.createdAt)}</div>
+        </div>
+      </div>
+    `);
+  });
+  if(items.length){
+    list.innerHTML = items.join("");
+  } else {
+    empty.classList.remove("hidden");
+  }
+}
+load();
+</script>
+</body>
+</html>

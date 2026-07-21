@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Info Hub — DECA Chapter Hub</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+
+<div class="page">
+  <p class="eyebrow">Resources</p>
+  <h1 class="title">Info Hub</h1>
+  <p class="lede">Everything about how DECA works, competition prep, and where to find study materials. Edit this page's HTML directly to update content — no database needed.</p>
+
+  <div class="section-title">Getting Started</div>
+  <div class="info-grid">
+    <div class="card info-card">
+      <h3>What is a role-play?</h3>
+      <p>A timed scenario where you're given a business problem and a role (e.g. marketing manager). You get prep time, then present a solution to a judge and answer follow-up questions.</p>
+    </div>
+    <div class="card info-card">
+      <h3>What is a written case study?</h3>
+      <p>A longer business problem you research and prepare a written report and presentation for, usually with a partner. Judged on analysis, strategy, and delivery.</p>
+    </div>
+    <div class="card info-card">
+      <h3>The exam</h3>
+      <p>A multiple-choice test on business concepts specific to your competitive event's category (marketing, finance, hospitality, etc.).</p>
+    </div>
+  </div>
+
+  <div class="section-title">Competition Levels</div>
+  <div class="info-grid">
+    <div class="card info-card">
+      <h3>Chapter</h3>
+      <p>Internal practice and points-earning events run by execs throughout the year.</p>
+    </div>
+    <div class="card info-card">
+      <h3>Region / District</h3>
+      <p>The first official competitive level — top performers qualify for States.</p>
+    </div>
+    <div class="card info-card">
+      <h3>State (SCDC)</h3>
+      <p>State Career Development Conference. Top finishers qualify for ICDC.</p>
+    </div>
+    <div class="card info-card">
+      <h3>International (ICDC)</h3>
+      <p>The international finals — the biggest stage in DECA.</p>
+    </div>
+  </div>
+
+  <div class="section-title">Prep Tips</div>
+  <div class="info-grid">
+    <div class="card info-card">
+      <h3>Practice role-plays weekly</h3>
+      <p>Time yourself doing prep + presenting. Comfort with the format matters as much as content knowledge.</p>
+    </div>
+    <div class="card info-card">
+      <h3>Know your performance indicators</h3>
+      <p>Every event has a published list of skills you'll be judged on — study them directly.</p>
+    </div>
+    <div class="card info-card">
+      <h3>Use Google Classroom</h3>
+      <p>Practice exams, past role-play prompts, and slide decks are kept there — check it weekly during competition season.</p>
+    </div>
+  </div>
+</div>
+
+<footer>DECA Chapter Hub — built for members, by members.</footer>
+
+<script type="module">
+import { renderNav, watchAuth } from "../js/app.js";
+renderNav("/pages/info.html");
+watchAuth(()=>{});
+</script>
+</body>
+</html>

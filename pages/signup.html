@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up — DECA Chapter Hub</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+
+<div class="page-narrow">
+  <p class="eyebrow">Member Account</p>
+  <h1 class="title">Create your account</h1>
+  <p class="lede">Use your school email. This is how you'll show up on the individual leaderboard and attendance records.</p>
+
+  <div class="card">
+    <div id="msg" class="msg"></div>
+    <form id="signup-form">
+      <div class="field">
+        <label for="name">Full name</label>
+        <input type="text" id="name" required placeholder="Jordan Lee">
+      </div>
+      <div class="field">
+        <label for="cluster">Cluster / Team</label>
+        <select id="cluster" required></select>
+      </div>
+      <div class="field">
+        <label for="email">School email</label>
+        <input type="email" id="email" required placeholder="you@school.edu">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" required minlength="6" placeholder="At least 6 characters">
+      </div>
+      <button class="btn" type="submit" style="width:100%">Create account</button>
+    </form>
+    <p class="muted mt center">Already have an account? <a href="login.html" style="color:var(--navy); font-weight:600;">Log in</a></p>
+  </div>
+</div>
+
+<footer>DECA Chapter Hub — built for members, by members.</footer>
+
+<script type="module">
+import {
+  auth, db, CLUSTERS, doc, setDoc, serverTimestamp,
+  createUserWithEmailAndPassword, renderNav, showMsg
+} from "../js/app.js";
+
+renderNav("");
+
+const clusterSel = document.getElementById("cluster");
+CLUSTERS.forEach(c=>{
+  const opt = document.createElement("option");
+  opt.value = c; opt.textContent = c;
+  clusterSel.appendChild(opt);
+});
+
+const form = document.getElementById("signup-form");
+const msg = document.getElementById("msg");
+
+form.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const name = document.getElementById("name").value.trim();
+  const cluster = clusterSel.value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  try{
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, "users", cred.user.uid), {
+      name, cluster, email, createdAt: serverTimestamp()
+    });
+    showMsg(msg, "Account created! Redirecting...", "success");
+    setTimeout(()=> window.location.href = "../index.html", 900);
+  } catch(err){
+    showMsg(msg, err.message.replace("Firebase: ",""), "error");
+  }
+});
+</script>
+</body>
+</html>

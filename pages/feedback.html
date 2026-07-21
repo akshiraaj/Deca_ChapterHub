@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feedback — DECA Chapter Hub</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+
+<div class="page-narrow">
+  <p class="eyebrow">Speak Up</p>
+  <h1 class="title">Questions, Suggestions & Feedback</h1>
+  <p class="lede">Ask a question, suggest an idea, or tell execs what's working and what isn't. You can submit anonymously.</p>
+
+  <div class="card">
+    <div id="msg" class="msg"></div>
+    <form id="form">
+      <div class="field">
+        <label for="message">Your message</label>
+        <input type="text" id="message" required placeholder="Type your question, idea, or feedback">
+      </div>
+      <div class="field" id="name-field">
+        <label for="name">Your name</label>
+        <input type="text" id="name" placeholder="Optional if submitting anonymously">
+      </div>
+      <div class="field" style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="anon" style="width:auto;">
+        <label for="anon" style="margin:0;">Submit anonymously</label>
+      </div>
+      <button class="btn" type="submit">Submit</button>
+    </form>
+  </div>
+</div>
+
+<footer>DECA Chapter Hub — built for members, by members.</footer>
+
+<script type="module">
+import { db, collection, addDoc, serverTimestamp, renderNav, watchAuth, showMsg } from "../js/app.js";
+
+renderNav("/pages/feedback.html");
+watchAuth(()=>{});
+
+const anonBox = document.getElementById("anon");
+anonBox.addEventListener("change", ()=>{
+  document.getElementById("name-field").classList.toggle("hidden", anonBox.checked);
+});
+
+document.getElementById("form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById("msg");
+  const message = document.getElementById("message").value.trim();
+  const anonymous = anonBox.checked;
+  const name = anonymous ? "" : document.getElementById("name").value.trim();
+
+  try{
+    await addDoc(collection(db, "feedback"), { message, anonymous, name, createdAt: serverTimestamp() });
+    showMsg(msg, "Thanks — your message was sent to execs.", "success");
+    e.target.reset();
+  } catch(err){
+    showMsg(msg, err.message.replace("Firebase: ",""), "error");
+  }
+});
+</script>
+</body>
+</html>
