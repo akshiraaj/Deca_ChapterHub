@@ -22,7 +22,6 @@ export {
 
 // ---------- Nav bar (shared across every page) ----------
 const NAV_LINKS = [
-  ["/index.html", "Home"],
   ["/pages/leaderboard.html", "Leaderboard"],
   ["/pages/attendance.html", "Attendance"],
   ["/pages/info.html", "Info Hub"],
@@ -52,8 +51,34 @@ export function watchAuth(cb){
     cb(user);
     const userEl = document.getElementById("nav-user");
     if(userEl){
-      userEl.textContent = user && !user.isAnonymous ? (user.email || "") : "";
+      userEl.innerHTML = user && !user.isAnonymous
+        ? `${user.email} &nbsp;·&nbsp; <a href="#" id="logout-link">Log out</a>`
+        : "";
+      const logoutLink = document.getElementById("logout-link");
+      if(logoutLink){
+        logoutLink.addEventListener("click", async (e)=>{
+          e.preventDefault();
+          await signOut(auth);
+          window.location.href = "/index.html";
+        });
+      }
     }
+  });
+}
+
+// Gate a page behind member login. Redirects to the landing page if the
+// visitor isn't signed in with a real (non-anonymous) account. Resolves
+// with the Firebase user once confirmed.
+export function requireAuth(){
+  return new Promise((resolve)=>{
+    const unsub = onAuthStateChanged(auth, (user)=>{
+      unsub();
+      if(!user || user.isAnonymous){
+        window.location.href = "/index.html";
+      } else {
+        resolve(user);
+      }
+    });
   });
 }
 

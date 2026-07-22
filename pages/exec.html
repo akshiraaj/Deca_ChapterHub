@@ -141,8 +141,9 @@ import {
   getDocs, query, orderBy, serverTimestamp, signInAnonymously,
   renderNav, showMsg, fmtDate
 } from "../js/app.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-renderNav("");
+renderNav("/pages/exec.html");
 
 // populate cluster dropdowns
 ["gate-cluster","points-cluster","att-cluster"].forEach(id=>{
@@ -157,6 +158,22 @@ renderNav("");
 const gateEl = document.getElementById("gate");
 const dashEl = document.getElementById("dash");
 let currentExecCluster = null;
+
+// If this session is already elevated to exec (e.g. came from the landing
+// page's exec tab), skip straight to the dashboard.
+onAuthStateChanged(auth, async (user)=>{
+  if(!user) return;
+  const existing = await getDoc(doc(db, "execs", user.uid));
+  if(existing.exists()){
+    currentExecCluster = existing.data().cluster;
+    gateEl.classList.add("hidden");
+    dashEl.classList.remove("hidden");
+    loadAttendance();
+    loadInbox();
+  }
+});
+
+
 
 // ---------- Gate ----------
 document.getElementById("gate-form").addEventListener("submit", async (e)=>{

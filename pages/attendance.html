@@ -14,11 +14,6 @@
   <h1 class="title">Attendance</h1>
   <p class="lede">Every meeting and event you've been marked for. Execs log this from the exec dashboard.</p>
 
-  <div id="signed-out" class="card hidden">
-    <p style="margin:0 0 12px;">Log in to see your attendance record.</p>
-    <a href="login.html" class="btn">Log in</a>
-  </div>
-
   <table class="data hidden" id="att-table">
     <thead><tr><th>Event</th><th>Status</th><th>Date</th></tr></thead>
     <tbody></tbody>
@@ -32,19 +27,15 @@
 <footer>DECA Chapter Hub — built for members, by members.</footer>
 
 <script type="module">
-import { auth, db, collection, getDocs, query, orderBy, renderNav, watchAuth, getUserProfile, fmtDate } from "../js/app.js";
+import { auth, db, collection, getDocs, query, orderBy, renderNav, watchAuth, getUserProfile, fmtDate, requireAuth } from "../js/app.js";
 
+const user = await requireAuth();
 renderNav("/pages/attendance.html");
+watchAuth(()=>{});
 
-watchAuth(async (user)=>{
+(async ()=>{
   const table = document.getElementById("att-table");
   const empty = document.getElementById("empty");
-  const signedOut = document.getElementById("signed-out");
-
-  if(!user || user.isAnonymous){
-    signedOut.classList.remove("hidden");
-    return;
-  }
 
   const profile = await getUserProfile(user.uid);
   const name = profile ? profile.name : user.email;
@@ -64,7 +55,7 @@ watchAuth(async (user)=>{
   } else {
     empty.classList.remove("hidden");
   }
-});
+})();
 </script>
 </body>
 </html>

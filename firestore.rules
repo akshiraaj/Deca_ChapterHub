@@ -8,9 +8,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // ---- Member profiles ----
+    // ---- Member profiles. Read requires login (any signed-in session,
+    // including exec's anonymous session, since execs need to look up names). ----
     match /users/{uid} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == uid;
       allow update, delete: if false;
     }
@@ -26,33 +27,33 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // ---- Points: anyone can read (for the leaderboard), only execs can add ----
+    // ---- Points: readable only when logged in (member or exec), only execs can add ----
     match /points/{id} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow create: if request.auth != null
         && exists(/databases/$(database)/documents/execs/$(request.auth.uid));
       allow update, delete: if false;
     }
 
-    // ---- Attendance: anyone can read, only execs can add ----
+    // ---- Attendance: readable only when logged in, only execs can add ----
     match /attendance/{id} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow create: if request.auth != null
         && exists(/databases/$(database)/documents/execs/$(request.auth.uid));
       allow update, delete: if false;
     }
 
-    // ---- Spotlights: anyone can read, only execs can add ----
+    // ---- Spotlights: readable only when logged in, only execs can add ----
     match /spotlights/{id} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow create: if request.auth != null
         && exists(/databases/$(database)/documents/execs/$(request.auth.uid));
       allow update, delete: if false;
     }
 
-    // ---- Feedback: anyone can submit, only execs can read (privacy) ----
+    // ---- Feedback: only logged-in members can submit; only execs can read (privacy) ----
     match /feedback/{id} {
-      allow create: if true;
+      allow create: if request.auth != null;
       allow read: if request.auth != null
         && exists(/databases/$(database)/documents/execs/$(request.auth.uid));
       allow update, delete: if false;

@@ -3,61 +3,213 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DECA Chapter Hub</title>
+<title>Sinclair DECA</title>
 <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<nav class="nav" id="nav"></nav>
 
-<div class="hero">
-  <p class="eyebrow">Chapter season 2025&ndash;26</p>
-  <h1>Compete. Earn points.<br>Climb the board.</h1>
-  <p>Everything the chapter needs in one place — live rankings, attendance, and recognition, updated in real time.</p>
-  <div class="hero-cta">
-    <a href="/pages/leaderboard.html" class="btn">View leaderboard</a>
-    <a href="/pages/signup.html" class="btn btn-outline">Sign up</a>
+<div class="auth-screen">
+  <div class="auth-image">
+    <div class="mark">Sinclair DECA<span class="sub">Chapter 2025&ndash;26</span></div>
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-panel-inner">
+      <h1 class="auth-title">Sinclair DECA</h1>
+      <p class="auth-subtitle">Get ready to compete.</p>
+
+      <div class="auth-tabs">
+        <div class="auth-tab active" data-tab="member">Member</div>
+        <div class="auth-tab" data-tab="exec">Exec</div>
+      </div>
+
+      <!-- MEMBER PANEL -->
+      <div id="member-panel">
+        <div class="auth-subtabs">
+          <div class="auth-subtab active" data-subtab="login">Log in</div>
+          <div class="auth-subtab" data-subtab="signup">Sign up</div>
+        </div>
+
+        <div id="auth-msg" class="msg"></div>
+
+        <!-- Log in form -->
+        <form id="login-form">
+          <div class="auth-field">
+            <label for="login-email">School email</label>
+            <input type="email" id="login-email" required placeholder="you@school.edu">
+          </div>
+          <div class="auth-field">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" required>
+          </div>
+          <button class="btn auth-submit" type="submit">Log in</button>
+        </form>
+
+        <!-- Sign up form -->
+        <form id="signup-form" class="hidden">
+          <div class="auth-field">
+            <label for="signup-name">Full name</label>
+            <input type="text" id="signup-name" required placeholder="Jordan Lee">
+          </div>
+          <div class="auth-field">
+            <label for="signup-cluster">Cluster / Team</label>
+            <select id="signup-cluster" required></select>
+          </div>
+          <div class="auth-field">
+            <label for="signup-email">School email</label>
+            <input type="email" id="signup-email" required placeholder="you@school.edu">
+          </div>
+          <div class="auth-field">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" required minlength="6" placeholder="At least 6 characters">
+          </div>
+          <button class="btn auth-submit" type="submit">Create account</button>
+        </form>
+
+        <p class="auth-switch" id="switch-to-signup">No account yet? <a href="#">Sign up</a></p>
+        <p class="auth-switch hidden" id="switch-to-login">Already have an account? <a href="#">Log in</a></p>
+      </div>
+
+      <!-- EXEC PANEL -->
+      <div id="exec-panel" class="hidden">
+        <div id="exec-msg" class="msg"></div>
+        <form id="exec-form">
+          <div class="auth-field">
+            <label for="exec-cluster">Your cluster</label>
+            <select id="exec-cluster" required></select>
+          </div>
+          <div class="auth-field">
+            <label for="exec-code">Exec code</label>
+            <input type="password" id="exec-code" required placeholder="Enter the code given to execs">
+          </div>
+          <button class="btn btn-crimson auth-submit" type="submit">Enter exec mode</button>
+        </form>
+      </div>
+
+    </div>
   </div>
 </div>
 
-<div class="feature-grid">
-  <a href="/pages/leaderboard.html" class="feature-card">
-    <div class="num">01</div>
-    <h3>Leaderboard</h3>
-    <p>Live rankings by cluster and individual, built from every point logged this season.</p>
-  </a>
-  <a href="/pages/attendance.html" class="feature-card">
-    <div class="num">02</div>
-    <h3>Attendance</h3>
-    <p>See your record across every meeting and event, logged by execs in real time.</p>
-  </a>
-  <a href="/pages/info.html" class="feature-card">
-    <div class="num">03</div>
-    <h3>Info Hub</h3>
-    <p>Role-play formats, competition levels, and prep tips — everything from the old site, organized.</p>
-  </a>
-  <a href="/pages/spotlights.html" class="feature-card">
-    <div class="num">04</div>
-    <h3>Spotlights</h3>
-    <p>Members featured by execs for leadership, growth, and standout results.</p>
-  </a>
-  <a href="/pages/feedback.html" class="feature-card">
-    <div class="num">05</div>
-    <h3>Feedback</h3>
-    <p>Ask a question or suggest an idea — anonymously if you'd rather.</p>
-  </a>
-  <a href="/pages/exec.html" class="feature-card">
-    <div class="num">06</div>
-    <h3>Exec dashboard</h3>
-    <p>Award points, log attendance, and post spotlights. Code required.</p>
-  </a>
-</div>
-
-<footer>DECA Chapter Hub — built for members, by members.</footer>
-
 <script type="module">
-import { renderNav, watchAuth } from "/js/app.js";
-renderNav("/index.html");
-watchAuth(()=>{});
+import {
+  auth, db, CLUSTERS, doc, setDoc, getDoc, serverTimestamp,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously,
+  showMsg
+} from "/js/app.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// populate cluster dropdowns
+["signup-cluster","exec-cluster"].forEach(id=>{
+  const sel = document.getElementById(id);
+  CLUSTERS.forEach(c=>{
+    const opt = document.createElement("option");
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+});
+
+// If already signed in, skip straight to the right place.
+onAuthStateChanged(auth, async (user)=>{
+  if(!user) return;
+  if(user.isAnonymous){
+    const execDoc = await getDoc(doc(db, "execs", user.uid));
+    if(execDoc.exists()){ window.location.href = "/pages/exec.html"; }
+  } else {
+    window.location.href = "/pages/leaderboard.html";
+  }
+});
+
+// ---------- Member / Exec tab switching ----------
+const memberPanel = document.getElementById("member-panel");
+const execPanel = document.getElementById("exec-panel");
+document.querySelectorAll(".auth-tab").forEach(tab=>{
+  tab.addEventListener("click", ()=>{
+    document.querySelectorAll(".auth-tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    const isMember = tab.dataset.tab === "member";
+    memberPanel.classList.toggle("hidden", !isMember);
+    execPanel.classList.toggle("hidden", isMember);
+  });
+});
+
+// ---------- Log in / Sign up sub-tab switching ----------
+const loginForm = document.getElementById("login-form");
+const signupForm = document.getElementById("signup-form");
+const switchToSignup = document.getElementById("switch-to-signup");
+const switchToLogin = document.getElementById("switch-to-login");
+
+function showLogin(){
+  document.querySelectorAll(".auth-subtab").forEach(t=>t.classList.remove("active"));
+  document.querySelector('[data-subtab="login"]').classList.add("active");
+  loginForm.classList.remove("hidden");
+  signupForm.classList.add("hidden");
+  switchToSignup.classList.remove("hidden");
+  switchToLogin.classList.add("hidden");
+}
+function showSignup(){
+  document.querySelectorAll(".auth-subtab").forEach(t=>t.classList.remove("active"));
+  document.querySelector('[data-subtab="signup"]').classList.add("active");
+  signupForm.classList.remove("hidden");
+  loginForm.classList.add("hidden");
+  switchToLogin.classList.remove("hidden");
+  switchToSignup.classList.add("hidden");
+}
+document.querySelector('[data-subtab="login"]').addEventListener("click", showLogin);
+document.querySelector('[data-subtab="signup"]').addEventListener("click", showSignup);
+switchToSignup.querySelector("a").addEventListener("click",(e)=>{ e.preventDefault(); showSignup(); });
+switchToLogin.querySelector("a").addEventListener("click",(e)=>{ e.preventDefault(); showLogin(); });
+
+// ---------- Log in ----------
+const authMsg = document.getElementById("auth-msg");
+loginForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  try{
+    await signInWithEmailAndPassword(auth, email, password);
+    showMsg(authMsg, "Logged in! Redirecting...", "success");
+    setTimeout(()=> window.location.href = "/pages/leaderboard.html", 600);
+  } catch(err){
+    showMsg(authMsg, err.message.replace("Firebase: ",""), "error");
+  }
+});
+
+// ---------- Sign up ----------
+signupForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const name = document.getElementById("signup-name").value.trim();
+  const cluster = document.getElementById("signup-cluster").value;
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value;
+  try{
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, "users", cred.user.uid), { name, cluster, email, createdAt: serverTimestamp() });
+    showMsg(authMsg, "Account created! Redirecting...", "success");
+    setTimeout(()=> window.location.href = "/pages/leaderboard.html", 600);
+  } catch(err){
+    showMsg(authMsg, err.message.replace("Firebase: ",""), "error");
+  }
+});
+
+// ---------- Exec login ----------
+document.getElementById("exec-form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById("exec-msg");
+  const cluster = document.getElementById("exec-cluster").value;
+  const code = document.getElementById("exec-code").value;
+  try{
+    if(!auth.currentUser){ await signInAnonymously(auth); }
+    const uid = auth.currentUser.uid;
+    const existing = await getDoc(doc(db, "execs", uid));
+    if(!existing.exists()){
+      await setDoc(doc(db, "execs", uid), { code, cluster, createdAt: serverTimestamp() });
+    }
+    showMsg(msg, "Welcome back — redirecting...", "success");
+    setTimeout(()=> window.location.href = "/pages/exec.html", 600);
+  } catch(err){
+    showMsg(msg, "Incorrect code, or you're not authorized.", "error");
+  }
+});
 </script>
 </body>
 </html>

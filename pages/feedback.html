@@ -37,8 +37,9 @@
 <footer>DECA Chapter Hub — built for members, by members.</footer>
 
 <script type="module">
-import { db, collection, addDoc, serverTimestamp, renderNav, watchAuth, showMsg } from "../js/app.js";
+import { db, collection, addDoc, serverTimestamp, renderNav, watchAuth, showMsg, requireAuth } from "../js/app.js";
 
+await requireAuth();
 renderNav("/pages/feedback.html");
 watchAuth(()=>{});
 
