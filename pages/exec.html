@@ -10,9 +10,14 @@
 <nav class="nav" id="nav"></nav>
 
 <div class="page">
-  <p class="eyebrow">Exec Only</p>
-  <h1 class="title">Exec Dashboard</h1>
-  <p class="lede">Enter the exec code to award points, log attendance, post spotlights, and view feedback.</p>
+  <div class="flex-between" style="margin-bottom:32px;">
+  <div>
+    <p class="eyebrow" style="margin-bottom:4px;">Exec Only</p>
+    <h1 class="title" style="margin:0;">Exec Dashboard</h1>
+  </div>
+  <button class="btn btn-outline" id="exec-logout">Log out</button>
+</div>
+<p class="lede">Enter the exec code to award points, log attendance, post spotlights, and view feedback.</p>
 
   <!-- GATE -->
   <div class="card" id="gate" style="max-width:420px;">
@@ -139,11 +144,16 @@
 import {
   auth, db, CLUSTERS, doc, setDoc, getDoc, addDoc, collection,
   getDocs, query, orderBy, serverTimestamp, signInAnonymously,
-  renderNav, showMsg, fmtDate
+  signOut, renderNav, showMsg, fmtDate
 } from "../js/app.js";
+
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 renderNav("/pages/exec.html");
+document.getElementById("exec-logout").addEventListener("click", async ()=>{
+  await signOut(auth);
+  window.location.href = "/index.html";
+});
 
 // populate cluster dropdowns
 ["gate-cluster","points-cluster","att-cluster"].forEach(id=>{
