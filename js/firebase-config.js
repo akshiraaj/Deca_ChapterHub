@@ -3,12 +3,12 @@
 // Firebase Console → Project Settings → General → Your apps → SDK setup and config
 // ============================================================
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyD9_nCeFYOlhyK0ckN7dcRcSBGLc8oJvF4",
+  authDomain: "deca-chapter-hub-23513.firebaseapp.com",
+  projectId: "deca-chapter-hub-23513",
+  storageBucket: "deca-chapter-hub-23513.firebasestorage.app",
+  messagingSenderId: "54897593265",
+  appId: "1:54897593265:web:935819b251391b1c374b90"
 };
 
 // List of clusters/teams in your chapter — edit freely.
@@ -17,5 +17,6 @@ export const CLUSTERS = [
   "Finance",
   "Hospitality & Tourism",
   "Business Management & Administration",
-  "Entrepreneurship"
+  "Entrepreneurship",
+  "Principles"
 ];
