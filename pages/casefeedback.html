@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Feedback — DECA Chapter Hub</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+
+<div class="page">
+  <p class="eyebrow">Your Feedback</p>
+  <h1 class="title">Case Feedback</h1>
+  <p class="lede">Feedback from your execs on case studies and role-plays. Only you and your cluster execs can see this.</p>
+
+  <div id="cf-list"></div>
+  <div class="empty hidden" id="empty">
+    <div class="empty-title">No feedback yet</div>
+    <p class="muted">When an exec sends you case feedback it'll show up here.</p>
+  </div>
+</div>
+
+<footer>DECA Chapter Hub — built for members, by members.</footer>
+
+<script type="module">
+import { auth, db, collection, getDocs, query, orderBy, where, renderNav, watchAuth, getUserProfile, fmtDate, requireAuth } from "../js/app.js";
+import { where as whereClause } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const user = await requireAuth();
+renderNav("/pages/casefeedback.html");
+watchAuth(()=>{});
+
+const profile = await getUserProfile(user.uid);
+const name = profile ? profile.name : user.email;
+
+const list = document.getElementById("cf-list");
+const empty = document.getElementById("empty");
+
+const snap = await getDocs(query(
+  collection(db, "casefeedback"),
+  whereClause("name", "==", name),
+  orderBy("createdAt", "desc")
+));
+
+const items = [];
+snap.forEach(d=>{
+  const f = d.data();
+  items.push(`
+    <div class="card" style="margin-bottom:14px;">
+      <div class="flex-between" style="margin-bottom:10px;">
+        <div>
+          <strong style="color:#fff;font-size:15px;">${f.event}</strong>
+          <div class="muted" style="margin-top:3px;">${fmtDate(f.createdAt)}</div>
+        </div>
+        <span class="pill pill-excused" style="font-size:14px;padding:5px 14px;">${f.grade}</span>
+      </div>
+      <p style="margin:0;font-size:14px;color:var(--slate);line-height:1.6;">${f.feedback}</p>
+    </div>
+  `);
+});
+
+if(items.length){
+  list.innerHTML = items.join("");
+} else {
+  empty.classList.remove("hidden");
+}
+</script>
+</body>
+</html>

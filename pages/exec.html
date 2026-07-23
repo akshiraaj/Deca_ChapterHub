@@ -11,13 +11,13 @@
 
 <div class="page">
   <div class="flex-between" style="margin-bottom:32px;">
-  <div>
-    <p class="eyebrow" style="margin-bottom:4px;">Exec Only</p>
-    <h1 class="title" style="margin:0;">Exec Dashboard</h1>
+    <div>
+      <p class="eyebrow" style="margin-bottom:4px;">Exec Only</p>
+      <h1 class="title" style="margin:0;">Exec Dashboard</h1>
+    </div>
+    <button class="btn btn-outline" id="exec-logout">Log out</button>
   </div>
-  <button class="btn btn-outline" id="exec-logout">Log out</button>
-</div>
-<p class="lede">Enter the exec code to award points, log attendance, post spotlights, and view feedback.</p>
+  <p class="lede">Award points, post spotlights, send case feedback, and view member submissions.</p>
 
   <!-- GATE -->
   <div class="card" id="gate" style="max-width:420px;">
@@ -39,9 +39,9 @@
   <div id="dash" class="hidden">
     <div class="board-tabs">
       <button class="board-tab active" data-tab="points">Award Points</button>
-      <button class="board-tab" data-tab="attendance">Attendance</button>
       <button class="board-tab" data-tab="spotlight">Spotlight</button>
-      <button class="board-tab" data-tab="inbox">Feedback Inbox</button>
+      <button class="board-tab" data-tab="casefeedback">Case Feedback</button>
+      <button class="board-tab" data-tab="inbox">Member Feedback</button>
     </div>
 
     <!-- Award points -->
@@ -77,44 +77,9 @@
       </div>
     </div>
 
-    <!-- Attendance -->
-    <div class="tab-panel hidden" data-panel="attendance">
-      <div class="card" style="max-width:520px;">
-        <div id="att-msg" class="msg"></div>
-        <form id="att-form">
-          <div class="field">
-            <label for="att-name">Member name</label>
-            <input type="text" id="att-name" required placeholder="Jordan Lee">
-          </div>
-          <div class="field">
-            <label for="att-cluster">Cluster</label>
-            <select id="att-cluster" required></select>
-          </div>
-          <div class="field">
-            <label for="att-event">Event / meeting</label>
-            <input type="text" id="att-event" required placeholder="e.g. General Meeting #4">
-          </div>
-          <div class="field">
-            <label for="att-status">Status</label>
-            <select id="att-status">
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-              <option value="excused">Excused</option>
-            </select>
-          </div>
-          <button class="btn" type="submit">Log attendance</button>
-        </form>
-      </div>
-      <div class="section-title">Recent Records</div>
-      <table class="data" id="att-table">
-        <thead><tr><th>Name</th><th>Cluster</th><th>Event</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
     <!-- Spotlight -->
     <div class="tab-panel hidden" data-panel="spotlight">
-      <div class="card" style="max-width:520px;">
+      <div class="card" style="max-width:520px; margin-bottom:24px;">
         <div id="spot-msg" class="msg"></div>
         <form id="spot-form">
           <div class="field">
@@ -128,11 +93,41 @@
           <button class="btn" type="submit">Post spotlight</button>
         </form>
       </div>
+      <div class="section-title">Current Spotlights</div>
+      <div id="spot-list"></div>
     </div>
 
-    <!-- Inbox -->
+    <!-- Case Feedback -->
+    <div class="tab-panel hidden" data-panel="casefeedback">
+      <div class="card" style="max-width:520px; margin-bottom:24px;">
+        <div id="cf-msg" class="msg"></div>
+        <form id="cf-form">
+          <div class="field">
+            <label for="cf-name">Member name</label>
+            <input type="text" id="cf-name" required placeholder="Jordan Lee">
+          </div>
+          <div class="field">
+            <label for="cf-event">Case study / event</label>
+            <input type="text" id="cf-event" required placeholder="e.g. Marketing Role-Play #2">
+          </div>
+          <div class="field">
+            <label for="cf-grade">Grade / Mark</label>
+            <input type="text" id="cf-grade" required placeholder="e.g. 88/100 or B+">
+          </div>
+          <div class="field">
+            <label for="cf-feedback">Feedback & tips</label>
+            <textarea id="cf-feedback" required placeholder="What went well, what to improve..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;background:rgba(255,255,255,0.03);color:var(--ink);min-height:100px;resize:vertical;"></textarea>
+          </div>
+          <button class="btn" type="submit">Send feedback</button>
+        </form>
+      </div>
+      <div class="section-title">Sent Feedback</div>
+      <div id="cf-list"></div>
+    </div>
+
+    <!-- Member Feedback Inbox -->
     <div class="tab-panel hidden" data-panel="inbox">
-      <div class="section-title">Feedback Inbox</div>
+      <div class="section-title">Member Feedback Inbox</div>
       <div id="inbox-list"></div>
     </div>
   </div>
@@ -146,17 +141,20 @@ import {
   getDocs, query, orderBy, serverTimestamp, signInAnonymously,
   signOut, renderNav, showMsg, fmtDate
 } from "../js/app.js";
-
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 renderNav("/pages/exec.html");
+
+// logout
 document.getElementById("exec-logout").addEventListener("click", async ()=>{
   await signOut(auth);
   window.location.href = "/index.html";
 });
 
 // populate cluster dropdowns
-["gate-cluster","points-cluster","att-cluster"].forEach(id=>{
+["gate-cluster","points-cluster"].forEach(id=>{
   const sel = document.getElementById(id);
   CLUSTERS.forEach(c=>{
     const opt = document.createElement("option");
@@ -169,8 +167,7 @@ const gateEl = document.getElementById("gate");
 const dashEl = document.getElementById("dash");
 let currentExecCluster = null;
 
-// If this session is already elevated to exec (e.g. came from the landing
-// page's exec tab), skip straight to the dashboard.
+// If this session is already elevated to exec, skip straight to the dashboard.
 onAuthStateChanged(auth, async (user)=>{
   if(!user) return;
   const existing = await getDoc(doc(db, "execs", user.uid));
@@ -178,12 +175,11 @@ onAuthStateChanged(auth, async (user)=>{
     currentExecCluster = existing.data().cluster;
     gateEl.classList.add("hidden");
     dashEl.classList.remove("hidden");
-    loadAttendance();
+    loadSpotlights();
+    loadCaseFeedback();
     loadInbox();
   }
 });
-
-
 
 // ---------- Gate ----------
 document.getElementById("gate-form").addEventListener("submit", async (e)=>{
@@ -193,11 +189,8 @@ document.getElementById("gate-form").addEventListener("submit", async (e)=>{
   const code = document.getElementById("gate-code").value;
 
   try{
-    if(!auth.currentUser){
-      await signInAnonymously(auth);
-    }
+    if(!auth.currentUser){ await signInAnonymously(auth); }
     const uid = auth.currentUser.uid;
-    // Try to read existing exec doc first (in case already elevated this session)
     const existing = await getDoc(doc(db, "execs", uid));
     if(!existing.exists()){
       await setDoc(doc(db, "execs", uid), { code, cluster, createdAt: serverTimestamp() });
@@ -205,7 +198,8 @@ document.getElementById("gate-form").addEventListener("submit", async (e)=>{
     currentExecCluster = cluster;
     gateEl.classList.add("hidden");
     dashEl.classList.remove("hidden");
-    loadAttendance();
+    loadSpotlights();
+    loadCaseFeedback();
     loadInbox();
   } catch(err){
     showMsg(msg, "Incorrect code, or you're not authorized. Check with your chapter advisor.", "error");
@@ -251,44 +245,6 @@ document.getElementById("points-form").addEventListener("submit", async (e)=>{
   }
 });
 
-// ---------- Attendance ----------
-document.getElementById("att-form").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  const msg = document.getElementById("att-msg");
-  const name = document.getElementById("att-name").value.trim();
-  const cluster = document.getElementById("att-cluster").value;
-  const event = document.getElementById("att-event").value.trim();
-  const status = document.getElementById("att-status").value;
-
-  try{
-    await addDoc(collection(db, "attendance"), {
-      name, cluster, event, status,
-      recordedBy: currentExecCluster,
-      createdAt: serverTimestamp()
-    });
-    showMsg(msg, "Attendance logged.", "success");
-    e.target.reset();
-    loadAttendance();
-  } catch(err){
-    showMsg(msg, err.message.replace("Firebase: ",""), "error");
-  }
-});
-
-async function loadAttendance(){
-  const tbody = document.querySelector("#att-table tbody");
-  const snap = await getDocs(query(collection(db, "attendance"), orderBy("createdAt","desc")));
-  const rows = [];
-  snap.forEach(d=>{
-    const r = d.data();
-    rows.push(`<tr>
-      <td>${r.name}</td><td>${r.cluster}</td><td>${r.event}</td>
-      <td><span class="pill pill-${r.status}">${r.status}</span></td>
-      <td>${fmtDate(r.createdAt)}</td>
-    </tr>`);
-  });
-  tbody.innerHTML = rows.slice(0,25).join("") || `<tr><td colspan="5" class="muted">No records yet.</td></tr>`;
-}
-
 // ---------- Spotlight ----------
 document.getElementById("spot-form").addEventListener("submit", async (e)=>{
   e.preventDefault();
@@ -299,12 +255,90 @@ document.getElementById("spot-form").addEventListener("submit", async (e)=>{
     await addDoc(collection(db, "spotlights"), { name, note, createdAt: serverTimestamp() });
     showMsg(msg, "Spotlight posted.", "success");
     e.target.reset();
+    loadSpotlights();
   } catch(err){
     showMsg(msg, err.message.replace("Firebase: ",""), "error");
   }
 });
 
-// ---------- Inbox ----------
+async function loadSpotlights(){
+  const list = document.getElementById("spot-list");
+  const snap = await getDocs(query(collection(db, "spotlights"), orderBy("createdAt","desc")));
+  const items = [];
+  snap.forEach(d=>{
+    const s = d.data();
+    items.push(`
+      <div class="card" style="margin-bottom:12px;">
+        <div class="flex-between">
+          <div>
+            <strong style="color:#fff;">${s.name}</strong>
+            <p style="margin:4px 0 0;font-size:13px;color:var(--slate);">${s.note}</p>
+          </div>
+          <button class="btn btn-crimson" style="font-size:12px;padding:7px 14px;" onclick="deleteSpotlight('${d.id}')">Delete</button>
+        </div>
+      </div>
+    `);
+  });
+  list.innerHTML = items.join("") || `<div class="empty"><div class="empty-title">No spotlights yet</div></div>`;
+}
+
+window.deleteSpotlight = async (id)=>{
+  if(!confirm("Delete this spotlight?")) return;
+  await deleteDoc(doc(db, "spotlights", id));
+  loadSpotlights();
+};
+
+// ---------- Case Feedback ----------
+document.getElementById("cf-form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById("cf-msg");
+  const name = document.getElementById("cf-name").value.trim();
+  const event = document.getElementById("cf-event").value.trim();
+  const grade = document.getElementById("cf-grade").value.trim();
+  const feedback = document.getElementById("cf-feedback").value.trim();
+
+  try{
+    await addDoc(collection(db, "casefeedback"), {
+      name, event, grade, feedback,
+      cluster: currentExecCluster,
+      createdAt: serverTimestamp()
+    });
+    showMsg(msg, "Feedback sent.", "success");
+    e.target.reset();
+    loadCaseFeedback();
+  } catch(err){
+    showMsg(msg, err.message.replace("Firebase: ",""), "error");
+  }
+});
+
+async function loadCaseFeedback(){
+  const list = document.getElementById("cf-list");
+  const snap = await getDocs(query(
+    collection(db, "casefeedback"),
+    where("cluster", "==", currentExecCluster),
+    orderBy("createdAt","desc")
+  ));
+  const items = [];
+  snap.forEach(d=>{
+    const f = d.data();
+    items.push(`
+      <div class="card" style="margin-bottom:12px;">
+        <div class="flex-between">
+          <div>
+            <strong style="color:#fff;">${f.name}</strong>
+            <span class="muted" style="margin-left:10px;">${f.event}</span>
+          </div>
+          <span class="pill pill-excused">${f.grade}</span>
+        </div>
+        <p style="margin:10px 0 0;font-size:13.5px;color:var(--slate);">${f.feedback}</p>
+        <div class="muted" style="margin-top:8px;">${fmtDate(f.createdAt)}</div>
+      </div>
+    `);
+  });
+  list.innerHTML = items.join("") || `<div class="empty"><div class="empty-title">No feedback sent yet</div></div>`;
+}
+
+// ---------- Member Feedback Inbox ----------
 async function loadInbox(){
   const list = document.getElementById("inbox-list");
   const snap = await getDocs(query(collection(db, "feedback"), orderBy("createdAt","desc")));

@@ -51,6 +51,14 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+     // ---- Case feedback: written by cluster execs, readable by that student or same-cluster execs ----
+    match /casefeedback/{id} {
+      allow create: if request.auth != null
+        && exists(/databases/$(database)/documents/execs/$(request.auth.uid));
+      allow read: if request.auth != null;
+      allow update, delete: if false;
+    }
+
     // ---- Feedback: only logged-in members can submit; only execs can read (privacy) ----
     match /feedback/{id} {
       allow create: if request.auth != null;
