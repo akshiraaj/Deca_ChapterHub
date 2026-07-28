@@ -12,12 +12,7 @@
 <div class="page">
   <p class="eyebrow">Live Standings</p>
   <h1 class="title">Leaderboard</h1>
-  <p class="lede">Rankings update as execs log points from meetings, competitions, and case studies. Switch between individual and cluster views below.</p>
-
-  <div class="board-tabs">
-    <button class="board-tab active" data-scope="cluster">Clusters</button>
-    <button class="board-tab" data-scope="individual">Individuals</button>
-  </div>
+  <p class="lede">Rankings update as execs log points from meetings, competitions, and case studies.</p>
 
   <div class="board-wrap" id="board"></div>
   <div class="empty hidden" id="empty">
@@ -37,12 +32,10 @@ watchAuth(()=>{});
 
 const boardEl = document.getElementById("board");
 const emptyEl = document.getElementById("empty");
-let scope = "cluster";
 
 async function loadPoints(){
   const snap = await getDocs(collection(db, "points"));
   const clusterTotals = {};
-  const individualTotals = {};
 
   snap.forEach(d=>{
     const p = d.data();
@@ -50,18 +43,12 @@ async function loadPoints(){
     if(p.cluster){
       clusterTotals[p.cluster] = (clusterTotals[p.cluster] || 0) + pts;
     }
-    if(p.scope === "individual" && p.uid){
-      if(!individualTotals[p.uid]){
-        individualTotals[p.uid] = { name: p.name || "Member", cluster: p.cluster || "", points: 0 };
-      }
-      individualTotals[p.uid].points += pts;
-    }
   });
 
-  return { clusterTotals, individualTotals };
+  return clusterTotals;
 }
 
-function renderBoard(rows, subLabel){
+function renderBoard(rows){
   if(rows.length === 0){
     boardEl.classList.add("hidden");
     emptyEl.classList.remove("hidden");
@@ -76,38 +63,20 @@ function renderBoard(rows, subLabel){
         <div class="rank-num">${rank}</div>
         <div>
           <div class="rank-name">${r.name}</div>
-          <div class="rank-sub">${r.sub}</div>
         </div>
-        <div class="rank-pts"><span class="label">${subLabel}</span>${r.points} pts</div>
+        <div class="rank-pts"><span class="label">Points</span>${r.points} pts</div>
       </div>
     `;
   }).join("");
 }
 
 async function render(){
-  const { clusterTotals, individualTotals } = await loadPoints();
-
-  if(scope === "cluster"){
-    const rows = Object.entries(clusterTotals)
-      .sort((a,b)=>b[1]-a[1])
-      .map(([name, points])=>({ name, sub: "Cluster", points }));
-    renderBoard(rows, "Points");
-  } else {
-    const rows = Object.values(individualTotals)
-      .sort((a,b)=>b.points-a.points)
-      .map(m=>({ name: m.name, sub: m.cluster, points: m.points }));
-    renderBoard(rows, "Points");
-  }
+  const clusterTotals = await loadPoints();
+  const rows = Object.entries(clusterTotals)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([name, points])=>({ name, points }));
+  renderBoard(rows);
 }
-
-document.querySelectorAll(".board-tab").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    document.querySelectorAll(".board-tab").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    scope = btn.dataset.scope;
-    render();
-  });
-});
 
 render();
 </script>

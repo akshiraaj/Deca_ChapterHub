@@ -357,6 +357,14 @@ async function loadInbox(){
   });
   list.innerHTML = items.join("") || `<div class="empty"><div class="empty-title">Inbox is empty</div><p class="muted">Submissions from the feedback form will show up here.</p></div>`;
 }
+
+async function loadClusterMembers(cluster){
+  const snap = await getDocs(query(collection(db, "users"), whereClause("cluster", "==", cluster)));
+  const members = [];
+  snap.forEach(d => members.push({ uid: d.id, name: d.data().name }));
+  return members;
+}
+
 </script>
 </body>
 </html>

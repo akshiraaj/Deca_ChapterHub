@@ -23,11 +23,9 @@ export {
 // ---------- Nav bar (shared across every page) ----------
 const NAV_LINKS = [
   ["/pages/leaderboard.html", "Leaderboard"],
-  ["/pages/attendance.html", "Attendance"],
   ["/pages/info.html", "Info Hub"],
   ["/pages/spotlights.html", "Spotlights"],
   ["/pages/feedback.html", "Feedback"],
-  ["/pages/exec.html", "Exec"]
 ];
 
 export function renderNav(activePath){
@@ -66,9 +64,6 @@ export function watchAuth(cb){
   });
 }
 
-// Gate a page behind member login. Redirects to the landing page if the
-// visitor isn't signed in with a real (non-anonymous) account. Resolves
-// with the Firebase user once confirmed.
 export function requireAuth(){
   return new Promise((resolve)=>{
     const unsub = onAuthStateChanged(auth, (user)=>{
