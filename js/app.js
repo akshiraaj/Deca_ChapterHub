@@ -6,39 +6,26 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, collection, addDoc,
-  getDocs, query, orderBy, serverTimestamp
+  getDocs, query, orderBy, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, CLUSTERS } from "./firebase-config.js";
+import { firebaseConfig, CLUSTERS, CLUSTER_META } from "./firebase-config.js";
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 export {
-  doc, setDoc, getDoc, collection, addDoc, getDocs, query, orderBy, serverTimestamp,
+  doc, setDoc, getDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp,
   signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously,
-  CLUSTERS
+  CLUSTERS, CLUSTER_META
 };
 
-// ---------- Nav bar (shared across every page) ----------
-const NAV_LINKS = [
-  ["/pages/leaderboard.html", "Leaderboard"],
-  ["/pages/info.html", "Info Hub"],
-  ["/pages/spotlights.html", "Spotlights"],
-  ["/pages/feedback.html", "Feedback"],
-];
-
-export function renderNav(activePath){
+export function renderNav(){
   const el = document.getElementById("nav");
   if(!el) return;
-  const links = NAV_LINKS.map(([href,label])=>{
-    const active = activePath === href ? "active" : "";
-    return `<a href="${href}" class="${active}">${label}</a>`;
-  }).join("");
   el.innerHTML = `
     <div class="nav-inner">
       <a href="/index.html" class="nav-brand"><span class="dot">◆</span> DECA Chapter Hub</a>
-      <div class="nav-links">${links}</div>
       <div id="nav-user" class="nav-user"></div>
     </div>
   `;

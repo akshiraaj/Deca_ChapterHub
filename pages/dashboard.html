@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — DECA Chapter Hub</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+<div id="tint" style="position:absolute; top:0; left:0; right:0; height:420px; pointer-events:none; z-index:-1;"></div>
+
+<div class="page">
+  <div id="greeting" class="card" style="display:flex; align-items:center; gap:16px; margin-bottom:24px;"></div>
+  <div id="widgets" style="display:flex; flex-direction:column; gap:12px;"></div>
+</div>
+
+<footer>DECA Chapter Hub — built for members, by members.</footer>
+
+<script type="module">
+import {
+  db, collection, getDocs, query, orderBy, where, addDoc, serverTimestamp,
+  renderNav, watchAuth, requireAuth, getUserProfile, fmtDate, showMsg, CLUSTER_META
+} from "/js/app.js";
+
+const user = await requireAuth();
+renderNav();
+watchAuth(()=>{});
+
+const profile = await getUserProfile(user.uid);
+const cluster = profile ? profile.cluster : null;
+const meta = CLUSTER_META[cluster] || { color: "#4C6FFF", badge: "", nickname: "Member" };
+
+document.getElementById("tint").style.background =
+  `radial-gradient(1000px 500px at 50% -10%, ${meta.color}30, transparent 60%)`;
+
+document.getElementById("greeting").innerHTML = `
+  <div style="width:52px;height:52px;border-radius:8px;background:${meta.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
+    <img src="${meta.badge}" style="width:100%;height:100%;object-fit:contain;" alt="${cluster} badge">
+  </div>
+  <div>
+    <h1 class="title" style="margin:0;font-size:26px;">Hello, ${meta.nickname}</h1>
+    <p class="eyebrow" style="margin:4px 0 0;">${cluster || "No cluster set"}</p>
+  </div>
+`;
+
+function widgetCard(icon, title, teaser, bodyHtml){
+  const el = document.createElement("div");
+  el.className = "card";
+  el.style.padding = "0";
+  el.innerHTML = `
+    <div class="w-head" style="display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;">
+      <div style="flex:1;">
+        <p style="font-weight:700;font-size:15px;color:#fff;margin:0;">${title}</p>
+        <p class="muted" style="margin:3px 0 0;">${teaser}</p>
+      </div>
+      <span class="w-chev">▾</span>
+    </div>
+    <div class="w-body hidden" style="padding:0 20px 20px;">${bodyHtml}</div>
+  `;
+  el.querySelector(".w-head").addEventListener("click", ()=>{
+    el.querySelector(".w-body").classList.toggle("hidden");
+  });
+  return el;
+}
+
+const widgetsEl = document.getElementById("widgets");
+
+// ---- Cluster rank + leaderboard ----
+const pointsSnap = await getDocs(collection(db, "points"));
+const totals = {};
+pointsSnap.forEach(d=>{
+  const p = d.data();
+  if(p.cluster) totals[p.cluster] = (totals[p.cluster] || 0) + (Number(p.points)||0);
+});
+const ranked = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+const myRank = ranked.findIndex(([name])=>name === cluster) + 1;
+const myPoints = totals[cluster] || 0;
+
+const boardRows = ranked.map(([name, pts], i)=>`
+  <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px;">
+    <span style="color:${name===cluster ? '#fff' : 'var(--slate)'};font-weight:${name===cluster ? '700' : '400'};">${i+1}. ${name}</span>
+    <span style="color:${name===cluster ? '#fff' : 'var(--slate)'};">${pts} pts</span>
+  </div>
+`).join("") || `<p class="muted">No points logged yet.</p>`;
+
+widgetsEl.appendChild(widgetCard("trophy", "Leaderboard", myRank ? `Your cluster ranked ${myRank} of ${ranked.length}, ${myPoints} pts` : "No points logged yet", boardRows));
+
+// ---- Spotlights ----
+const spotSnap = await getDocs(query(collection(db, "spotlights"), orderBy("createdAt","desc")));
+let spotHtml = "";
+let spotCount = 0;
+spotSnap.forEach(d=>{
+  const s = d.data();
+  spotCount++;
+  spotHtml += `<div style="margin-bottom:10px;"><strong style="color:#fff;font-size:13.5px;">${s.name}</strong><p class="muted" style="margin:2px 0 0;">${s.note}</p></div>`;
+});
+widgetsEl.appendChild(widgetCard("star", "Spotlights", spotCount ? `${spotCount} member${spotCount===1?"":"s"} featured` : "No spotlights yet", spotHtml || `<p class="muted">No spotlights yet.</p>`));
+
+// ---- Case feedback (matched by name — see note below) ----
+const name = profile ? profile.name : user.email;
+const cfSnap = await getDocs(query(collection(db, "casefeedback"), where("name","==",name), orderBy("createdAt","desc")));
+let cfHtml = "";
+let cfCount = 0;
+cfSnap.forEach(d=>{
+  const f = d.data();
+  cfCount++;
+  cfHtml += `
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;">
+        <strong style="color:#fff;font-size:13.5px;">${f.event}</strong>
+        <span class="pill pill-excused">${f.grade}</span>
+      </div>
+      <p class="muted" style="margin:6px 0 0;">${f.feedback}</p>
+    </div>`;
+});
+widgetsEl.appendChild(widgetCard("message", "Case feedback", cfCount ? `${cfCount} note${cfCount===1?"":"s"} from your execs` : "No feedback yet", cfHtml || `<p class="muted">No feedback yet.</p>`));
+
+// ---- Send feedback ----
+const fbBody = `
+  <div id="fb-msg" class="msg"></div>
+  <input type="text" id="fb-message" placeholder="Type your question, idea, or feedback" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);background:rgba(255,255,255,0.03);color:var(--ink);font-size:14px;margin-bottom:10px;">
+  <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--slate);margin-bottom:10px;"><input type="checkbox" id="fb-anon" style="width:auto;"> Submit anonymously</label>
+  <button class="btn" id="fb-submit">Submit</button>
+`;
+widgetsEl.appendChild(widgetCard("mail", "Send feedback", `Goes to your ${cluster || ""} execs`, fbBody));
+
+document.getElementById("fb-submit").addEventListener("click", async ()=>{
+  const msg = document.getElementById("fb-msg");
+  const message = document.getElementById("fb-message").value.trim();
+  const anonymous = document.getElementById("fb-anon").checked;
+  if(!message) return;
+  try{
+    await addDoc(collection(db, "feedback"), {
+      message, anonymous, name: anonymous ? "" : name,
+      cluster, createdAt: serverTimestamp()
+    });
+    showMsg(msg, "Sent to your execs.", "success");
+    document.getElementById("fb-message").value = "";
+  } catch(err){
+    showMsg(msg, err.message.replace("Firebase: ",""), "error");
+  }
+});
+</script>
+</body>
+</html>

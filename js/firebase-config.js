@@ -20,3 +20,12 @@ export const CLUSTERS = [
   "Entrepreneurship",
   "Principles"
 ];
+
+export const CLUSTER_META = {
+  "Finance": { color: "#639922", badge: "/assets/badges/finance-foxes.svg", nickname: "Fox" },
+  "Marketing": { color: "#993556", badge: "/assets/badges/marketing-monkeys.svg", nickname: "Monkey" },
+  "Hospitality & Tourism": { color: "#185FA5", badge: "/assets/badges/hospitality.svg", nickname: "Horse" },
+  "Business Management & Administration": { color: "#BA7517", badge: "/assets/badges/admin-alligators.svg", nickname: "Alligator" },
+  "Entrepreneurship": { color: "#534AB7", badge: "/assets/badges/entrepreneurship.svg", nickname: "Phoenix" },
+  "Principles": { color: "#D85A30", badge: "/assets/badges/principles.svg", nickname: "Wolf" }
+};
