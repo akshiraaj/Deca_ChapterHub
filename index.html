@@ -115,7 +115,7 @@ onAuthStateChanged(auth, async (user)=>{
     const execDoc = await getDoc(doc(db, "execs", user.uid));
     if(execDoc.exists()){ window.location.href = "/pages/exec.html"; }
   } else {
-    window.location.href = "/pages/leaderboard.html";
+    window.location.href = "/pages/dashboard.html";
   }
 });
 
@@ -168,7 +168,7 @@ loginForm.addEventListener("submit", async (e)=>{
   try{
     await signInWithEmailAndPassword(auth, email, password);
     showMsg(authMsg, "Logged in! Redirecting...", "success");
-    setTimeout(()=> window.location.href = "/pages/leaderboard.html", 600);
+    setTimeout(()=> window.location.href = "/pages/dashboard.html", 600);
   } catch(err){
     showMsg(authMsg, err.message.replace("Firebase: ",""), "error");
   }
@@ -185,7 +185,7 @@ signupForm.addEventListener("submit", async (e)=>{
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await setDoc(doc(db, "users", cred.user.uid), { name, cluster, email, createdAt: serverTimestamp() });
     showMsg(authMsg, "Account created! Redirecting...", "success");
-    setTimeout(()=> window.location.href = "/pages/leaderboard.html", 600);
+    setTimeout(()=> window.location.href = "/pages/dashboard.html", 600);
   } catch(err){
     showMsg(authMsg, err.message.replace("Firebase: ",""), "error");
   }
