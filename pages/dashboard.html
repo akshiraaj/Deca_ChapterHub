@@ -5,14 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — DECA Chapter Hub</title>
 <link rel="stylesheet" href="/css/style.css">
+<style>
+  .d-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .d-card { background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 16px; }
+  .d-card-wide { grid-column: span 2; }
+  .d-label { font-family: var(--mono); font-size: 10px; color: var(--slate); letter-spacing: .06em; text-transform: uppercase; margin: 0 0 10px; }
+  .d-num { font-family: var(--display); font-weight: 800; font-size: 36px; color: #fff; line-height: 1; margin: 0; }
+  .d-field { width: 100%; background: rgba(255,255,255,0.03); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--ink); font-size: 13px; padding: 9px 10px; box-sizing: border-box; margin-bottom: 8px; font-family: var(--body); }
+  .d-field:focus { outline: none; border-color: var(--royal); }
+  .d-btn { border: none; border-radius: var(--radius); color: #fff; font-weight: 700; font-size: 12.5px; padding: 10px 18px; cursor: pointer; font-family: var(--body); }
+  .d-btn-outline { background: transparent; border: 1.5px solid var(--border-strong); color: var(--ink); border-radius: var(--radius); font-size: 11.5px; padding: 7px 13px; cursor: pointer; font-family: var(--body); }
+  .d-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .d-row:last-child { border-bottom: none; }
+</style>
 </head>
 <body>
 <nav class="nav" id="nav"></nav>
 <div id="tint" style="position:fixed;top:0;left:0;right:0;height:420px;pointer-events:none;z-index:0;"></div>
 
 <div class="page" style="position:relative;z-index:1;">
-  <div id="greeting" style="display:flex;align-items:center;gap:16px;margin-bottom:28px;"></div>
-  <div id="widgets" style="display:flex;flex-direction:column;gap:12px;"></div>
+
+  <!-- HEADER -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div style="display:flex;align-items:center;gap:14px;" id="greeting"></div>
+    <button class="d-btn-outline" id="logout-btn">Log out</button>
+  </div>
+
+  <!-- GRID -->
+  <div class="d-grid" id="widgets"></div>
+
 </div>
 
 <footer>DECA Chapter Hub — built for members, by members.</footer>
@@ -38,7 +59,6 @@ if(!profile){
       <h1 class="title" style="margin:0;font-size:28px;">Welcome</h1>
       <p class="muted">Profile not found — try signing out and back in.</p>
     </div>`;
-  document.getElementById("widgets").innerHTML = `<p class="muted">No cluster data found. Contact your exec.</p>`;
   throw new Error("No profile");
 }
 
@@ -47,46 +67,37 @@ const meta = CLUSTER_META[cluster] || { color: "#4C6FFF", badge: "", nickname: "
 
 // tint
 document.getElementById("tint").style.background =
-  `radial-gradient(900px 400px at 50% 0%, ${meta.color}55, transparent 65%)`;
+  `radial-gradient(900px 400px at 50% 0%, ${meta.color}40, transparent 65%)`;
 
 // greeting
 document.getElementById("greeting").innerHTML = `
-  <div style="width:90px;height:90px;flex-shrink:0;">
-    <img src="${meta.badge}" style="width:100%;height:100%;object-fit:contain;" alt="${cluster}" onerror="this.style.display='none'">
+  <div style="width:56px;height:56px;border-radius:10px;background:${meta.color}22;border:1px solid ${meta.color}55;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;padding:4px;">
+    <img src="${meta.badge}" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'" alt="${cluster}">
   </div>
   <div>
-    <h1 class="title" style="margin:0;font-size:28px;">Hello, ${meta.nickname}</h1>
+    <h1 class="title" style="margin:0;font-size:26px;">Hello, ${meta.nickname}</h1>
     <p class="eyebrow" style="margin:4px 0 0;color:${meta.color};">${cluster}</p>
   </div>
 `;
 
-// widget builder
-function widgetCard(title, teaserHtml, bodyHtml){
-  const el = document.createElement("div");
-  el.className = "card";
-  el.style.cssText = "padding:0;overflow:hidden;";
-  el.innerHTML = `
-    <div class="w-head" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;">
-      <div>
-        <p style="font-weight:700;font-size:15px;color:#fff;margin:0;">${title}</p>
-        <p class="muted" style="margin:3px 0 0;font-size:13px;">${teaserHtml}</p>
-      </div>
-      <span class="w-chev" style="color:var(--slate-dim);font-size:18px;">▾</span>
-    </div>
-    <div class="w-body hidden" style="padding:0 20px 20px;border-top:1px solid var(--border);">${bodyHtml}</div>
-  `;
-  el.querySelector(".w-head").addEventListener("click", ()=>{
-    el.querySelector(".w-body").classList.toggle("hidden");
-    el.querySelector(".w-chev").textContent =
-      el.querySelector(".w-body").classList.contains("hidden") ? "▾" : "▴";
-  });
-  return el;
-}
+// logout
+document.getElementById("logout-btn").addEventListener("click", async ()=>{
+  const { auth, signOut } = await import("/js/app.js");
+  await signOut(auth);
+  window.location.href = "/index.html";
+});
 
 const widgetsEl = document.getElementById("widgets");
 
+function card(extraClass, html){
+  const el = document.createElement("div");
+  el.className = "d-card" + (extraClass ? " " + extraClass : "");
+  el.innerHTML = html;
+  return el;
+}
+
 // ---- Leaderboard ----
-const pointsSnap = await getDocs(collection(db, "points"));
+const pointsSnap = await getDocs(collection(db,"points"));
 const totals = {};
 pointsSnap.forEach(d=>{
   const p = d.data();
@@ -96,41 +107,46 @@ const ranked = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
 const myRank = ranked.findIndex(([n])=>n===cluster)+1;
 const myPts = totals[cluster]||0;
 
-const boardRows = ranked.length ? ranked.map(([n,pts],i)=>`
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span style="font-family:var(--display);font-size:20px;font-weight:800;color:${n===cluster?meta.color:'var(--slate-dim)'};">${i+1}</span>
-      <span style="font-size:13.5px;color:${n===cluster?'#fff':'var(--slate)'};font-weight:${n===cluster?700:400};">${n}</span>
-    </div>
-    <span style="font-family:var(--mono);font-size:13px;color:${n===cluster?'#fff':'var(--slate)'};">${pts} pts</span>
-  </div>
-`).join("") : `<p class="muted" style="padding-top:12px;">No points logged yet.</p>`;
-
-widgetsEl.appendChild(widgetCard(
-  "Leaderboard",
-  myRank ? `Your cluster is ranked <strong style="color:#fff;">${myRank} of ${ranked.length}</strong> &mdash; ${myPts} pts` : "No points logged yet",
-  `<div style="padding-top:4px;">${boardRows}</div>`
-));
+widgetsEl.appendChild(card("", `
+  <p class="d-label">Your cluster rank</p>
+  <p class="d-num">${myRank || "—"} <span style="font-size:14px;color:var(--slate);font-weight:400;">of ${ranked.length}</span></p>
+  <p style="font-size:11px;color:${myRank===1?"#7FDBA6":"var(--slate)"};margin:6px 0 0;">${myPts} pts</p>
+`));
 
 // ---- Spotlights ----
 const spotSnap = await getDocs(query(collection(db,"spotlights"),orderBy("createdAt","desc")));
 let spotHtml = "";
-let spotCount = 0;
 spotSnap.forEach(d=>{
   const s = d.data();
-  spotCount++;
   spotHtml += `
-    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
-      <strong style="color:#fff;font-size:13.5px;">★ ${s.name}</strong>
-      <p class="muted" style="margin:4px 0 0;font-size:13px;">${s.note}</p>
-      <p class="muted" style="margin:4px 0 0;font-size:11px;">${fmtDate(s.createdAt)}</p>
+    <div class="d-row">
+      <div>
+        <p style="font-size:13px;font-weight:600;color:#fff;margin:0;">★ ${s.name}</p>
+        <p style="font-size:12px;color:var(--slate);margin:2px 0 0;">${s.note}</p>
+      </div>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--slate-dim);white-space:nowrap;margin-left:10px;">${fmtDate(s.createdAt)}</span>
     </div>`;
 });
-widgetsEl.appendChild(widgetCard(
-  "Spotlights",
-  spotCount ? `${spotCount} member${spotCount===1?"":"s"} featured` : "No spotlights yet",
-  spotHtml || `<p class="muted" style="padding-top:12px;">No spotlights yet.</p>`
-));
+widgetsEl.appendChild(card("", `
+  <p class="d-label">Spotlights</p>
+  ${spotHtml || '<p class="muted" style="font-size:12px;">No spotlights yet.</p>'}
+`));
+
+// ---- Full leaderboard ----
+const boardRows = ranked.length ? ranked.map(([n,pts],i)=>`
+  <div class="d-row">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:var(--display);font-size:20px;font-weight:800;color:${n===cluster?meta.color:"var(--slate-dim)"};">${i+1}</span>
+      <span style="font-size:13.5px;color:${n===cluster?"#fff":"var(--slate)"};font-weight:${n===cluster?700:400};">${n}</span>
+    </div>
+    <span style="font-family:var(--mono);font-size:13px;color:${n===cluster?"#fff":"var(--slate)"};">${pts} pts</span>
+  </div>
+`).join("") : `<p class="muted" style="font-size:12px;">No points logged yet.</p>`;
+
+widgetsEl.appendChild(card("d-card-wide", `
+  <p class="d-label">Leaderboard</p>
+  ${boardRows}
+`));
 
 // ---- Case feedback ----
 const memberName = profile.name || user.email;
@@ -143,58 +159,48 @@ try {
 } catch(err){ console.error("FAILED: casefeedback", err); }
 
 let cfHtml = "";
-let cfCount = 0;
 if(cfSnap) cfSnap.forEach(d=>{
   const f = d.data();
-  cfCount++;
   cfHtml += `
-    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div class="d-row" style="align-items:flex-start;flex-direction:column;gap:6px;">
+      <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
         <strong style="color:#fff;font-size:13.5px;">${f.event}</strong>
         <span class="pill pill-excused">${f.grade}</span>
       </div>
-      <p class="muted" style="margin:6px 0 0;font-size:13px;line-height:1.5;">${f.feedback}</p>
-      <p class="muted" style="margin:4px 0 0;font-size:11px;">${fmtDate(f.createdAt)}</p>
+      <p style="font-size:12px;color:var(--slate);margin:0;line-height:1.5;">${f.feedback}</p>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--slate-dim);">${fmtDate(f.createdAt)}</span>
     </div>`;
 });
-widgetsEl.appendChild(widgetCard(
-  "Case feedback",
-  cfCount ? `${cfCount} note${cfCount===1?"":"s"} from your execs` : "No feedback yet",
-  cfHtml || `<p class="muted" style="padding-top:12px;">No feedback yet — check back after your first case study.</p>`
-));
+
+widgetsEl.appendChild(card("", `
+  <p class="d-label">Case feedback</p>
+  ${cfHtml || '<p class="muted" style="font-size:12px;">No feedback yet.</p>'}
+`));
 
 // ---- Send feedback ----
-widgetsEl.appendChild(widgetCard(
-  "Send feedback",
-  `Goes straight to your ${cluster} execs`,
-  `
-    <div style="padding-top:12px;">
-      <div id="fb-msg" class="msg"></div>
-      <div class="field">
-        <label for="fb-message">Your message</label>
-        <input type="text" id="fb-message" placeholder="Question, idea, or feedback...">
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-        <input type="checkbox" id="fb-anon" style="width:auto;">
-        <label for="fb-anon" style="font-size:13px;color:var(--slate);margin:0;">Submit anonymously</label>
-      </div>
-      <button class="btn" id="fb-submit" style="background:${meta.color};">Submit</button>
-    </div>
-  `
-));
+widgetsEl.appendChild(card("", `
+  <p class="d-label">Send feedback</p>
+  <p style="font-size:12px;color:var(--slate);margin:0 0 10px;">Goes to your ${cluster} execs.</p>
+  <div id="fb-msg" class="msg"></div>
+  <input type="text" class="d-field" id="fb-message" placeholder="Question, idea, or feedback...">
+  <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--slate);margin-bottom:10px;">
+    <input type="checkbox" id="fb-anon" style="width:auto;"> Submit anonymously
+  </label>
+  <button class="d-btn" id="fb-submit" style="background:${meta.color};">Submit</button>
+`));
 
 document.getElementById("fb-submit").addEventListener("click", async ()=>{
   const msgEl = document.getElementById("fb-msg");
   const message = document.getElementById("fb-message").value.trim();
   const anonymous = document.getElementById("fb-anon").checked;
-  if(!message){ showMsg(msgEl, "Please type a message first.", "error"); return; }
+  if(!message){ showMsg(msgEl,"Please type a message first.","error"); return; }
   try{
     await addDoc(collection(db,"feedback"),{
       message, anonymous,
       name: anonymous ? "" : memberName,
       cluster, createdAt: serverTimestamp()
     });
-    showMsg(msgEl, "Sent to your execs.", "success");
+    showMsg(msgEl,"Sent to your execs.","success");
     document.getElementById("fb-message").value = "";
   } catch(err){
     showMsg(msgEl, err.message.replace("Firebase: ",""), "error");

@@ -4,131 +4,127 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exec Dashboard — DECA Chapter Hub</title>
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .e-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .e-card { background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 16px; }
+  .e-card-wide { grid-column: span 2; }
+  .e-label { font-family: var(--mono); font-size: 10px; color: var(--slate); letter-spacing: .06em; text-transform: uppercase; margin: 0 0 10px; }
+  .e-num { font-family: var(--display); font-weight: 800; font-size: 36px; color: #fff; line-height: 1; margin: 0; }
+  .e-field { width: 100%; background: rgba(255,255,255,0.03); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--ink); font-size: 13px; padding: 9px 10px; box-sizing: border-box; margin-bottom: 8px; font-family: var(--body); }
+  .e-field:focus { outline: none; border-color: var(--royal); }
+  .e-select { width: 100%; background: rgba(255,255,255,0.03); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--ink); font-size: 13px; padding: 9px 10px; box-sizing: border-box; margin-bottom: 8px; font-family: var(--body); }
+  .e-select option { background: #0B1220; }
+  .e-btn { border: none; border-radius: var(--radius); color: #fff; font-weight: 700; font-size: 12.5px; padding: 10px 18px; cursor: pointer; font-family: var(--body); letter-spacing: .02em; }
+  .e-btn-outline { background: transparent; border: 1.5px solid var(--border-strong); color: var(--ink); border-radius: var(--radius); font-size: 11.5px; padding: 7px 13px; cursor: pointer; font-family: var(--body); }
+  .e-inbox-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .e-inbox-row:last-child { border-bottom: none; }
+  .e-sw-dot { width: 22px; height: 22px; border-radius: 5px; cursor: pointer; border: 2px solid transparent; transition: border-color .15s; }
+  .e-sw-dot.active { border-color: rgba(255,255,255,0.6); }
+  .e-pick-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.03); transition: border-color .15s, background .15s; }
+  .e-pick-card:hover { background: rgba(255,255,255,0.06); }
+  .e-pick-label { font-family: var(--display); font-size: 12px; font-weight: 700; color: #fff; text-align: center; margin: 0; }
+  textarea.e-field { min-height: 80px; resize: vertical; }
+</style>
 </head>
 <body>
 <nav class="nav" id="nav"></nav>
+<div id="tint" style="position:fixed;top:0;left:0;right:0;height:420px;pointer-events:none;z-index:0;"></div>
 
-<div class="page">
-  <div class="flex-between" style="margin-bottom:32px;">
-    <div>
-      <p class="eyebrow" style="margin-bottom:4px;">Exec Only</p>
-      <h1 class="title" style="margin:0;">Exec Dashboard</h1>
-    </div>
-    <button class="btn btn-outline" id="exec-logout">Log out</button>
-  </div>
-  <p class="lede">Award points, post spotlights, send case feedback, and view member submissions.</p>
+<div class="page" style="position:relative;z-index:1;">
 
   <!-- GATE -->
-  <div class="card" id="gate" style="max-width:420px;">
-    <div id="gate-msg" class="msg"></div>
-    <form id="gate-form">
-      <div class="field">
-        <label for="gate-cluster">Your cluster</label>
-        <select id="gate-cluster" required></select>
+  <div id="gate-view">
+    <div style="max-width:360px;margin:0 auto;">
+      <p class="eyebrow">Exec only</p>
+      <h1 class="title" style="font-size:32px;margin-bottom:8px;">Enter exec mode</h1>
+      <p class="lede" style="margin-bottom:24px;">Enter your chapter exec code to continue.</p>
+      <div class="card">
+        <div id="gate-msg" class="msg"></div>
+        <input class="e-field" type="password" id="gate-code" placeholder="Exec code">
+        <button class="e-btn btn-crimson btn" style="width:100%;margin-top:4px;" id="gate-btn">Enter exec mode</button>
       </div>
-      <div class="field">
-        <label for="gate-code">Exec code</label>
-        <input type="password" id="gate-code" required placeholder="Enter the code given to execs">
-      </div>
-      <button class="btn btn-crimson" type="submit" style="width:100%">Enter exec mode</button>
-    </form>
+    </div>
+  </div>
+
+  <!-- CLUSTER PICKER -->
+  <div id="picker-view" class="hidden">
+    <p class="eyebrow">Select your cluster</p>
+    <h1 class="title" style="font-size:32px;margin-bottom:24px;">Which cluster are you managing?</h1>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:600px;" id="picker-grid"></div>
   </div>
 
   <!-- DASHBOARD -->
-  <div id="dash" class="hidden">
-    <div class="board-tabs">
-      <button class="board-tab active" data-tab="points">Award Points</button>
-      <button class="board-tab" data-tab="spotlight">Spotlight</button>
-      <button class="board-tab" data-tab="casefeedback">Case Feedback</button>
-      <button class="board-tab" data-tab="inbox">Member Feedback</button>
+  <div id="dash-view" class="hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div id="d-badge" style="width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;padding:4px;">
+          <img id="d-badge-img" style="width:100%;height:100%;object-fit:contain;" alt="">
+        </div>
+        <div>
+          <h1 class="title" id="d-name" style="margin:0;font-size:26px;"></h1>
+          <p class="eyebrow" id="d-label" style="margin:4px 0 0;"></p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;gap:5px;" id="d-switcher"></div>
+        <button class="btn btn-outline" id="exec-logout" style="font-size:12px;padding:7px 14px;margin-left:8px;">Log out</button>
+      </div>
     </div>
 
-    <!-- Award points -->
-    <div class="tab-panel" data-panel="points">
-      <div class="card" style="max-width:520px;">
+    <div class="e-grid">
+
+      <!-- Cluster total -->
+      <div class="e-card">
+        <p class="e-label">Cluster total</p>
+        <p class="e-num" id="d-pts">— <span style="font-size:14px;color:var(--slate);font-weight:400;">pts</span></p>
+        <p style="font-size:11px;margin:6px 0 0;" id="d-rank"></p>
+      </div>
+
+      <!-- Spotlights -->
+      <div class="e-card">
+        <p class="e-label">Current spotlight</p>
+        <div id="d-spot-current" style="margin-bottom:10px;"></div>
+        <button class="e-btn-outline" id="spot-toggle">Post new spotlight</button>
+        <div id="spot-form-wrap" class="hidden" style="margin-top:12px;">
+          <div id="spot-msg" class="msg"></div>
+          <input class="e-field" id="spot-name" placeholder="Member name">
+          <input class="e-field" id="spot-note" placeholder="Why they're being featured">
+          <button class="e-btn" id="spot-submit" style="background:var(--royal);">Post spotlight</button>
+        </div>
+      </div>
+
+      <!-- Award points -->
+      <div class="e-card">
+        <p class="e-label">Award points</p>
         <div id="points-msg" class="msg"></div>
-        <form id="points-form">
-          <div class="field">
-            <label>Award to</label>
-            <select id="points-scope">
-              <option value="cluster">Whole cluster</option>
-              <option value="individual">Individual member</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="points-cluster">Cluster</label>
-            <select id="points-cluster" required></select>
-          </div>
-          <div class="field hidden" id="points-name-field">
-            <label for="points-name">Member name</label>
-            <input type="text" id="points-name" placeholder="Jordan Lee">
-          </div>
-          <div class="field">
-            <label for="points-amount">Points</label>
-            <input type="number" id="points-amount" required placeholder="e.g. 10">
-          </div>
-          <div class="field">
-            <label for="points-reason">Reason</label>
-            <input type="text" id="points-reason" required placeholder="e.g. Attended workshop, placed 1st in role-play">
-          </div>
-          <button class="btn" type="submit">Award points</button>
-        </form>
+        <select class="e-select" id="pts-scope">
+          <option value="cluster">Whole cluster</option>
+          <option value="individual">Individual member</option>
+        </select>
+        <select class="e-select hidden" id="pts-member"></select>
+        <input class="e-field" type="number" id="pts-amount" placeholder="Points, e.g. 10">
+        <input class="e-field" id="pts-reason" placeholder="Reason">
+        <button class="e-btn" id="pts-submit" style="background:var(--royal);">Award points</button>
       </div>
-    </div>
 
-    <!-- Spotlight -->
-    <div class="tab-panel hidden" data-panel="spotlight">
-      <div class="card" style="max-width:520px; margin-bottom:24px;">
-        <div id="spot-msg" class="msg"></div>
-        <form id="spot-form">
-          <div class="field">
-            <label for="spot-name">Member name</label>
-            <input type="text" id="spot-name" required placeholder="Jordan Lee">
-          </div>
-          <div class="field">
-            <label for="spot-note">Why they're being featured</label>
-            <input type="text" id="spot-note" required placeholder="e.g. Led the chapter to 1st place at States">
-          </div>
-          <button class="btn" type="submit">Post spotlight</button>
-        </form>
-      </div>
-      <div class="section-title">Current Spotlights</div>
-      <div id="spot-list"></div>
-    </div>
-
-    <!-- Case Feedback -->
-    <div class="tab-panel hidden" data-panel="casefeedback">
-      <div class="card" style="max-width:520px; margin-bottom:24px;">
+      <!-- Case feedback -->
+      <div class="e-card">
+        <p class="e-label">Case feedback</p>
         <div id="cf-msg" class="msg"></div>
-        <form id="cf-form">
-          <div class="field">
-            <label for="cf-name">Member name</label>
-            <input type="text" id="cf-name" required placeholder="Jordan Lee">
-          </div>
-          <div class="field">
-            <label for="cf-event">Case study / event</label>
-            <input type="text" id="cf-event" required placeholder="e.g. Marketing Role-Play #2">
-          </div>
-          <div class="field">
-            <label for="cf-grade">Grade / Mark</label>
-            <input type="text" id="cf-grade" required placeholder="e.g. 88/100 or B+">
-          </div>
-          <div class="field">
-            <label for="cf-feedback">Feedback & tips</label>
-            <textarea id="cf-feedback" required placeholder="What went well, what to improve..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;background:rgba(255,255,255,0.03);color:var(--ink);min-height:100px;resize:vertical;"></textarea>
-          </div>
-          <button class="btn" type="submit">Send feedback</button>
-        </form>
+        <select class="e-select" id="cf-member"></select>
+        <input class="e-field" id="cf-event" placeholder="Event or role-play">
+        <input class="e-field" id="cf-grade" placeholder="Grade, e.g. 88/100">
+        <textarea class="e-field" id="cf-feedback" placeholder="What went well, what to improve..."></textarea>
+        <button class="e-btn" id="cf-submit" style="background:var(--royal);">Send feedback</button>
       </div>
-      <div class="section-title">Sent Feedback</div>
-      <div id="cf-list"></div>
-    </div>
 
-    <!-- Member Feedback Inbox -->
-    <div class="tab-panel hidden" data-panel="inbox">
-      <div class="section-title">Member Feedback Inbox</div>
-      <div id="inbox-list"></div>
+      <!-- Feedback inbox -->
+      <div class="e-card e-card-wide">
+        <p class="e-label">Feedback inbox <span id="inbox-label" style="color:var(--slate-dim);"></span></p>
+        <div id="inbox-list"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -137,15 +133,16 @@
 
 <script type="module">
 import {
-  auth, db, CLUSTERS, doc, setDoc, getDoc, addDoc, collection,
-  getDocs, query, orderBy, serverTimestamp, signInAnonymously,
-  signOut, renderNav, showMsg, fmtDate
-} from "../js/app.js";
+  auth, db, CLUSTERS, CLUSTER_META,
+  doc, setDoc, getDoc, collection, addDoc, getDocs,
+  query, orderBy, where, serverTimestamp,
+  signOut, signInAnonymously,
+  renderNav, showMsg, fmtDate
+} from "/js/app.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-renderNav("/pages/exec.html");
+renderNav();
 
 // logout
 document.getElementById("exec-logout").addEventListener("click", async ()=>{
@@ -153,218 +150,270 @@ document.getElementById("exec-logout").addEventListener("click", async ()=>{
   window.location.href = "/index.html";
 });
 
-// populate cluster dropdowns
-["gate-cluster","points-cluster"].forEach(id=>{
-  const sel = document.getElementById(id);
-  CLUSTERS.forEach(c=>{
-    const opt = document.createElement("option");
-    opt.value = c; opt.textContent = c;
-    sel.appendChild(opt);
-  });
-});
-
-const gateEl = document.getElementById("gate");
-const dashEl = document.getElementById("dash");
-let currentExecCluster = null;
-
-// If this session is already elevated to exec, skip straight to the dashboard.
+// check if already in exec mode
 onAuthStateChanged(auth, async (user)=>{
   if(!user) return;
-  const existing = await getDoc(doc(db, "execs", user.uid));
-  if(existing.exists()){
-    currentExecCluster = existing.data().cluster;
-    gateEl.classList.add("hidden");
-    dashEl.classList.remove("hidden");
-    loadSpotlights();
-    loadCaseFeedback();
-    loadInbox();
+  const snap = await getDoc(doc(db, "execs", user.uid));
+  if(snap.exists()){
+    showPickerView();
   }
 });
 
-// ---------- Gate ----------
-document.getElementById("gate-form").addEventListener("submit", async (e)=>{
-  e.preventDefault();
+// ---- Gate ----
+document.getElementById("gate-btn").addEventListener("click", async ()=>{
   const msg = document.getElementById("gate-msg");
-  const cluster = document.getElementById("gate-cluster").value;
-  const code = document.getElementById("gate-code").value;
-
+  const code = document.getElementById("gate-code").value.trim();
+  if(!code) return;
   try{
-    if(!auth.currentUser){ await signInAnonymously(auth); }
+    if(!auth.currentUser) await signInAnonymously(auth);
     const uid = auth.currentUser.uid;
     const existing = await getDoc(doc(db, "execs", uid));
     if(!existing.exists()){
-      await setDoc(doc(db, "execs", uid), { code, cluster, createdAt: serverTimestamp() });
+      await setDoc(doc(db, "execs", uid), { code, createdAt: serverTimestamp() });
     }
-    currentExecCluster = cluster;
-    gateEl.classList.add("hidden");
-    dashEl.classList.remove("hidden");
-    loadSpotlights();
-    loadCaseFeedback();
-    loadInbox();
+    showPickerView();
   } catch(err){
-    showMsg(msg, "Incorrect code, or you're not authorized. Check with your chapter advisor.", "error");
+    showMsg(msg, "Incorrect code — check with your chapter advisor.", "error");
   }
 });
 
-// ---------- Tabs ----------
-document.querySelectorAll(".board-tab").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    document.querySelectorAll(".board-tab").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.add("hidden"));
-    document.querySelector(`.tab-panel[data-panel="${btn.dataset.tab}"]`).classList.remove("hidden");
+function showPickerView(){
+  document.getElementById("gate-view").classList.add("hidden");
+  document.getElementById("picker-view").classList.remove("hidden");
+
+  const grid = document.getElementById("picker-grid");
+  grid.innerHTML = "";
+  CLUSTERS.forEach(name=>{
+    const meta = CLUSTER_META[name];
+    if(!meta) return;
+    const card = document.createElement("div");
+    card.className = "e-pick-card";
+    card.style.borderColor = "var(--border)";
+    card.innerHTML = `
+      <div style="width:52px;height:52px;border-radius:8px;background:${meta.color}22;border:1px solid ${meta.color}55;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px;">
+        <img src="${meta.badge}" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'" alt="${name}">
+      </div>
+      <p class="e-pick-label">${name}</p>
+    `;
+    card.addEventListener("mouseenter", ()=> card.style.borderColor = meta.color);
+    card.addEventListener("mouseleave", ()=> card.style.borderColor = "var(--border)");
+    card.addEventListener("click", ()=> loadCluster(name, meta));
+    grid.appendChild(card);
   });
+}
+
+let currentCluster = null;
+let clusterMembers = [];
+
+async function loadCluster(name, meta){
+  currentCluster = name;
+  document.getElementById("picker-view").classList.add("hidden");
+  document.getElementById("dash-view").classList.remove("hidden");
+
+  // tint
+  document.getElementById("tint").style.background =
+    `radial-gradient(900px 400px at 50% 0%, ${meta.color}40, transparent 65%)`;
+
+  // header
+  document.getElementById("d-badge-img").src = meta.badge;
+  document.getElementById("d-badge").style.background = `${meta.color}22`;
+  document.getElementById("d-name").textContent = name;
+  document.getElementById("d-label").textContent = "Exec dashboard";
+  document.getElementById("d-label").style.color = meta.color;
+  document.getElementById("pts-submit").style.background = meta.color;
+  document.getElementById("cf-submit").style.background = meta.color;
+  document.getElementById("spot-submit").style.background = meta.color;
+  document.getElementById("inbox-label").textContent = `· ${name} only`;
+
+  // switcher
+  const sw = document.getElementById("d-switcher");
+  sw.innerHTML = "";
+  CLUSTERS.forEach(n=>{
+    const m = CLUSTER_META[n];
+    if(!m) return;
+    const dot = document.createElement("div");
+    dot.className = "e-sw-dot" + (n===name ? " active" : "");
+    dot.style.background = m.color;
+    dot.title = n;
+    dot.addEventListener("click", ()=> loadCluster(n, m));
+    sw.appendChild(dot);
+  });
+
+  // load cluster points + rank
+  const pSnap = await getDocs(collection(db, "points"));
+  const totals = {};
+  pSnap.forEach(d=>{
+    const p = d.data();
+    if(p.cluster) totals[p.cluster] = (totals[p.cluster]||0) + (Number(p.points)||0);
+  });
+  const ranked = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const myPts = totals[name]||0;
+  const myRank = ranked.findIndex(([n])=>n===name)+1;
+  document.getElementById("d-pts").innerHTML = `${myPts} <span style="font-size:14px;color:var(--slate);font-weight:400;">pts</span>`;
+  document.getElementById("d-rank").style.color = myRank===1 ? "#7FDBA6" : "var(--slate)";
+  document.getElementById("d-rank").textContent = myRank ? `Rank ${myRank} of ${ranked.length}` : "No points yet";
+
+  // load cluster members into dropdowns
+  const uSnap = await getDocs(query(collection(db,"users"), where("cluster","==",name)));
+  clusterMembers = [];
+  uSnap.forEach(d=> clusterMembers.push({ uid: d.id, name: d.data().name }));
+
+  [document.getElementById("pts-member"), document.getElementById("cf-member")].forEach(sel=>{
+    sel.innerHTML = clusterMembers.length
+      ? clusterMembers.map(m=>`<option value="${m.uid}">${m.name}</option>`).join("")
+      : `<option disabled>No members found</option>`;
+  });
+
+  // load current spotlight
+  loadSpotlight();
+
+  // load feedback inbox
+  loadInbox(name);
+}
+
+// ---- Points scope toggle ----
+document.getElementById("pts-scope").addEventListener("change", e=>{
+  document.getElementById("pts-member").classList.toggle("hidden", e.target.value !== "individual");
 });
 
-// ---------- Points ----------
-document.getElementById("points-scope").addEventListener("change", (e)=>{
-  document.getElementById("points-name-field").classList.toggle("hidden", e.target.value !== "individual");
-});
-
-document.getElementById("points-form").addEventListener("submit", async (e)=>{
-  e.preventDefault();
+// ---- Award points ----
+document.getElementById("pts-submit").addEventListener("click", async ()=>{
   const msg = document.getElementById("points-msg");
-  const scope = document.getElementById("points-scope").value;
-  const cluster = document.getElementById("points-cluster").value;
-  const name = document.getElementById("points-name").value.trim();
-  const points = Number(document.getElementById("points-amount").value);
-  const reason = document.getElementById("points-reason").value.trim();
+  const scope = document.getElementById("pts-scope").value;
+  const amount = Number(document.getElementById("pts-amount").value);
+  const reason = document.getElementById("pts-reason").value.trim();
+  if(!amount || !reason){ showMsg(msg,"Fill in points and reason.","error"); return; }
+
+  let name = currentCluster;
+  let uid = null;
+  if(scope === "individual"){
+    const sel = document.getElementById("pts-member");
+    uid = sel.value;
+    name = clusterMembers.find(m=>m.uid===uid)?.name || currentCluster;
+  }
 
   try{
-    await addDoc(collection(db, "points"), {
-      scope, cluster,
-      name: scope === "individual" ? name : cluster,
-      points, reason,
-      awardedBy: currentExecCluster,
+    await addDoc(collection(db,"points"),{
+      scope, cluster: currentCluster,
+      name, uid, points: amount, reason,
       createdAt: serverTimestamp()
     });
-    showMsg(msg, "Points awarded — leaderboard updated.", "success");
-    e.target.reset();
+    showMsg(msg,"Points awarded — leaderboard updated.","success");
+    document.getElementById("pts-amount").value = "";
+    document.getElementById("pts-reason").value = "";
   } catch(err){
     showMsg(msg, err.message.replace("Firebase: ",""), "error");
   }
 });
 
-// ---------- Spotlight ----------
-document.getElementById("spot-form").addEventListener("submit", async (e)=>{
-  e.preventDefault();
+// ---- Spotlight ----
+document.getElementById("spot-toggle").addEventListener("click", ()=>{
+  document.getElementById("spot-form-wrap").classList.toggle("hidden");
+});
+
+document.getElementById("spot-submit").addEventListener("click", async ()=>{
   const msg = document.getElementById("spot-msg");
   const name = document.getElementById("spot-name").value.trim();
   const note = document.getElementById("spot-note").value.trim();
+  if(!name||!note){ showMsg(msg,"Fill in both fields.","error"); return; }
   try{
-    await addDoc(collection(db, "spotlights"), { name, note, createdAt: serverTimestamp() });
-    showMsg(msg, "Spotlight posted.", "success");
-    e.target.reset();
-    loadSpotlights();
+    await addDoc(collection(db,"spotlights"),{ name, note, createdAt: serverTimestamp() });
+    showMsg(msg,"Spotlight posted.","success");
+    document.getElementById("spot-name").value = "";
+    document.getElementById("spot-note").value = "";
+    document.getElementById("spot-form-wrap").classList.add("hidden");
+    loadSpotlight();
   } catch(err){
     showMsg(msg, err.message.replace("Firebase: ",""), "error");
   }
 });
 
-async function loadSpotlights(){
-  const list = document.getElementById("spot-list");
-  const snap = await getDocs(query(collection(db, "spotlights"), orderBy("createdAt","desc")));
-  const items = [];
-  snap.forEach(d=>{
-    const s = d.data();
-    items.push(`
-      <div class="card" style="margin-bottom:12px;">
-        <div class="flex-between">
-          <div>
-            <strong style="color:#fff;">${s.name}</strong>
-            <p style="margin:4px 0 0;font-size:13px;color:var(--slate);">${s.note}</p>
-          </div>
-          <button class="btn btn-crimson" style="font-size:12px;padding:7px 14px;" onclick="deleteSpotlight('${d.id}')">Delete</button>
-        </div>
+async function loadSpotlight(){
+  const el = document.getElementById("d-spot-current");
+ const snap = await getDocs(query(
+  collection(db,"feedback"),
+  where("cluster","==",cluster)
+));
+const items = [];
+snap.forEach(d=> items.push(d.data()));
+items.sort((a,b)=>{
+  const ta = a.createdAt?.toMillis?.() || 0;
+  const tb = b.createdAt?.toMillis?.() || 0;
+  return tb - ta;
+});
+  if(!items.length){
+    el.innerHTML = `<p class="muted" style="font-size:12px;">No spotlights yet.</p>`;
+    return;
+  }
+  el.innerHTML = items.map(s=>`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div>
+        <p style="font-size:13px;font-weight:600;color:#fff;margin:0;">${s.name}</p>
+        <p style="font-size:12px;color:var(--slate);margin:2px 0 0;">${s.note}</p>
       </div>
-    `);
-  });
-  list.innerHTML = items.join("") || `<div class="empty"><div class="empty-title">No spotlights yet</div></div>`;
+      <button onclick="deleteSpot('${s.id}')" style="background:transparent;border:none;color:var(--crimson);font-size:11px;cursor:pointer;padding:0;margin-left:10px;white-space:nowrap;">Delete</button>
+    </div>
+  `).join("");
 }
 
-window.deleteSpotlight = async (id)=>{
+window.deleteSpot = async (id)=>{
   if(!confirm("Delete this spotlight?")) return;
-  await deleteDoc(doc(db, "spotlights", id));
-  loadSpotlights();
+  await deleteDoc(doc(db,"spotlights",id));
+  loadSpotlight();
 };
 
-// ---------- Case Feedback ----------
-document.getElementById("cf-form").addEventListener("submit", async (e)=>{
-  e.preventDefault();
+// ---- Case feedback ----
+document.getElementById("cf-submit").addEventListener("click", async ()=>{
   const msg = document.getElementById("cf-msg");
-  const name = document.getElementById("cf-name").value.trim();
+  const sel = document.getElementById("cf-member");
+  const memberName = sel.options[sel.selectedIndex]?.text || "";
   const event = document.getElementById("cf-event").value.trim();
   const grade = document.getElementById("cf-grade").value.trim();
   const feedback = document.getElementById("cf-feedback").value.trim();
-
+  if(!memberName||!event||!grade||!feedback){ showMsg(msg,"Fill in all fields.","error"); return; }
   try{
-    await addDoc(collection(db, "casefeedback"), {
-      name, event, grade, feedback,
-      cluster: currentExecCluster,
-      createdAt: serverTimestamp()
+    await addDoc(collection(db,"casefeedback"),{
+      name: memberName, event, grade, feedback,
+      cluster: currentCluster, createdAt: serverTimestamp()
     });
-    showMsg(msg, "Feedback sent.", "success");
-    e.target.reset();
-    loadCaseFeedback();
+    showMsg(msg,"Feedback sent.","success");
+    document.getElementById("cf-event").value = "";
+    document.getElementById("cf-grade").value = "";
+    document.getElementById("cf-feedback").value = "";
   } catch(err){
     showMsg(msg, err.message.replace("Firebase: ",""), "error");
   }
 });
 
-async function loadCaseFeedback(){
-  const list = document.getElementById("cf-list");
-  const snap = await getDocs(query(
-    collection(db, "casefeedback"),
-    where("cluster", "==", currentExecCluster),
-    orderBy("createdAt","desc")
-  ));
-  const items = [];
-  snap.forEach(d=>{
-    const f = d.data();
-    items.push(`
-      <div class="card" style="margin-bottom:12px;">
-        <div class="flex-between">
-          <div>
-            <strong style="color:#fff;">${f.name}</strong>
-            <span class="muted" style="margin-left:10px;">${f.event}</span>
-          </div>
-          <span class="pill pill-excused">${f.grade}</span>
+// ---- Feedback inbox ----
+async function loadInbox(cluster){
+  const el = document.getElementById("inbox-list");
+  el.innerHTML = `<p class="muted" style="font-size:12px;">Loading...</p>`;
+  try{
+    const snap = await getDocs(query(
+      collection(db,"feedback"),
+      where("cluster","==",cluster),
+      orderBy("createdAt","desc")
+    ));
+    const items = [];
+    snap.forEach(d=> items.push(d.data()));
+    if(!items.length){
+      el.innerHTML = `<p class="muted" style="font-size:12px;">No feedback yet from ${cluster} members.</p>`;
+      return;
+    }
+    el.innerHTML = items.map(f=>`
+      <div class="e-inbox-row">
+        <div>
+          <p style="font-size:12.5px;font-weight:600;color:#fff;margin:0;">${f.anonymous ? "Anonymous" : (f.name || "Member")}</p>
+          <p style="font-size:12px;color:var(--slate);margin:3px 0 0;">${f.message}</p>
         </div>
-        <p style="margin:10px 0 0;font-size:13.5px;color:var(--slate);">${f.feedback}</p>
-        <div class="muted" style="margin-top:8px;">${fmtDate(f.createdAt)}</div>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--slate-dim);white-space:nowrap;margin-left:12px;">${fmtDate(f.createdAt)}</span>
       </div>
-    `);
-  });
-  list.innerHTML = items.join("") || `<div class="empty"><div class="empty-title">No feedback sent yet</div></div>`;
+    `).join("");
+  } catch(err){
+    el.innerHTML = `<p class="muted" style="font-size:12px;">Couldn't load feedback — check Firestore rules.</p>`;
+  }
 }
-
-// ---------- Member Feedback Inbox ----------
-async function loadInbox(){
-  const list = document.getElementById("inbox-list");
-  const snap = await getDocs(query(collection(db, "feedback"), orderBy("createdAt","desc")));
-  const items = [];
-  snap.forEach(d=>{
-    const f = d.data();
-    items.push(`
-      <div class="card" style="margin-bottom:12px;">
-        <div class="flex-between">
-          <strong>${f.anonymous ? "Anonymous" : (f.name || "Member")}</strong>
-          <span class="muted">${fmtDate(f.createdAt)}</span>
-        </div>
-        <p style="margin:8px 0 0;">${f.message}</p>
-      </div>
-    `);
-  });
-  list.innerHTML = items.join("") || `<div class="empty"><div class="empty-title">Inbox is empty</div><p class="muted">Submissions from the feedback form will show up here.</p></div>`;
-}
-
-async function loadClusterMembers(cluster){
-  const snap = await getDocs(query(collection(db, "users"), whereClause("cluster", "==", cluster)));
-  const members = [];
-  snap.forEach(d => members.push({ uid: d.id, name: d.data().name }));
-  return members;
-}
-
 </script>
 </body>
 </html>
