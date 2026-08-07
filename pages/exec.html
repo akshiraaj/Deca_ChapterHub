@@ -79,6 +79,7 @@
         <p class="e-label">Cluster total</p>
         <p class="e-num" id="d-pts">— <span style="font-size:14px;color:var(--slate);font-weight:400;">pts</span></p>
         <p style="font-size:11px;margin:6px 0 0;" id="d-rank"></p>
+        <button class="e-btn-outline" id="reset-pts-btn" style="margin-top:10px;">Reset to 0</button>
       </div>
 
       <!-- Spotlights -->
@@ -306,6 +307,39 @@ document.getElementById("pts-submit").addEventListener("click", async ()=>{
   }
 });
 
+// ---- Reset cluster points to 0 ----
+document.getElementById("reset-pts-btn").addEventListener("click", async ()=>{
+  if(!currentCluster) return;
+
+  const pSnap = await getDocs(collection(db, "points"));
+  let total = 0;
+  pSnap.forEach(d=>{
+    const p = d.data();
+    if(p.cluster === currentCluster) total += (Number(p.points)||0);
+  });
+
+  if(total === 0){
+    alert("Already at 0.");
+    return;
+  }
+  if(!confirm(`Reset ${currentCluster} from ${total} pts to 0? This adds an offsetting entry — it can't be undone from the UI.`)) return;
+
+  try{
+    await addDoc(collection(db,"points"),{
+      scope: "cluster",
+      cluster: currentCluster,
+      name: currentCluster,
+      uid: null,
+      points: -total,
+      reason: "Reset for testing",
+      createdAt: serverTimestamp()
+    });
+    loadCluster(currentCluster, CLUSTER_META[currentCluster]);
+  } catch(err){
+    alert(err.message.replace("Firebase: ",""));
+  }
+});
+
 // ---- Spotlight ----
 document.getElementById("spot-toggle").addEventListener("click", ()=>{
   document.getElementById("spot-form-wrap").classList.toggle("hidden");
@@ -330,17 +364,13 @@ document.getElementById("spot-submit").addEventListener("click", async ()=>{
 
 async function loadSpotlight(){
   const el = document.getElementById("d-spot-current");
- const snap = await getDocs(query(
-  collection(db,"feedback"),
-  where("cluster","==",cluster)
-));
-const items = [];
-snap.forEach(d=> items.push(d.data()));
-items.sort((a,b)=>{
-  const ta = a.createdAt?.toMillis?.() || 0;
-  const tb = b.createdAt?.toMillis?.() || 0;
-  return tb - ta;
-});
+  const snap = await getDocs(query(
+    collection(db,"spotlights"),
+    orderBy("createdAt","desc")
+  ));
+  const items = [];
+  snap.forEach(d=> items.push({ id: d.id, ...d.data() }));
+
   if(!items.length){
     el.innerHTML = `<p class="muted" style="font-size:12px;">No spotlights yet.</p>`;
     return;
@@ -411,8 +441,9 @@ async function loadInbox(cluster){
       </div>
     `).join("");
   } catch(err){
+    console.error("FEEDBACK LOAD ERROR:", err);
     el.innerHTML = `<p class="muted" style="font-size:12px;">Couldn't load feedback — check Firestore rules.</p>`;
-  }
+}
 }
 </script>
 </body>

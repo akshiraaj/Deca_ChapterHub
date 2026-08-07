@@ -37,11 +37,16 @@
 <footer>DECA Chapter Hub — built for members, by members.</footer>
 
 <script type="module">
-import { db, collection, addDoc, serverTimestamp, renderNav, watchAuth, showMsg, requireAuth } from "../js/app.js";
+import { db, collection, addDoc, serverTimestamp, renderNav, watchAuth, showMsg, requireAuth, getUserProfile } from "../js/app.js";
 
-await requireAuth();
+const user = await requireAuth();
 renderNav("/pages/feedback.html");
 watchAuth(()=>{});
+
+let profile;
+try {
+  profile = await getUserProfile(user.uid);
+} catch(err){ console.error("FAILED: getUserProfile", err); }
 
 const anonBox = document.getElementById("anon");
 anonBox.addEventListener("change", ()=>{
@@ -55,8 +60,17 @@ document.getElementById("form").addEventListener("submit", async (e)=>{
   const anonymous = anonBox.checked;
   const name = anonymous ? "" : document.getElementById("name").value.trim();
 
+  if(!profile?.cluster){
+    showMsg(msg, "Your profile is missing a cluster — visit the dashboard first to set it up.", "error");
+    return;
+  }
+
   try{
-    await addDoc(collection(db, "feedback"), { message, anonymous, name, createdAt: serverTimestamp() });
+    await addDoc(collection(db, "feedback"), {
+      message, anonymous, name,
+      cluster: profile.cluster,
+      createdAt: serverTimestamp()
+    });
     showMsg(msg, "Thanks — your message was sent to execs.", "success");
     e.target.reset();
   } catch(err){

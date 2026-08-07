@@ -40,7 +40,7 @@
 
 <script type="module">
 import {
-  db, collection, getDocs, query, orderBy, where, addDoc, serverTimestamp,
+  db, doc, setDoc, collection, getDocs, query, orderBy, where, addDoc, serverTimestamp,
   renderNav, watchAuth, requireAuth, getUserProfile, fmtDate, showMsg, CLUSTER_META
 } from "/js/app.js";
 
@@ -53,13 +53,60 @@ try {
   profile = await getUserProfile(user.uid);
 } catch(err){ console.error("FAILED: getUserProfile", err); }
 
+// If there's no profile doc for this UID (e.g. account was deleted/recreated,
+// or the signup flow never wrote one), let the user create it here instead
+// of dead-ending on an error.
 if(!profile){
-  document.getElementById("greeting").innerHTML = `
-    <div>
-      <h1 class="title" style="margin:0;font-size:28px;">Welcome</h1>
-      <p class="muted">Profile not found — try signing out and back in.</p>
-    </div>`;
-  throw new Error("No profile");
+  profile = await createMissingProfile();
+}
+
+async function createMissingProfile(){
+  const clusterOptions = Object.keys(CLUSTER_META);
+  return new Promise((resolve)=>{
+    document.getElementById("greeting").innerHTML = `
+      <div>
+        <h1 class="title" style="margin:0;font-size:28px;">Welcome</h1>
+        <p class="muted">We couldn't find a profile for your account. Set it up below to continue.</p>
+      </div>`;
+
+    const widgetsEl = document.getElementById("widgets");
+    const setupCard = document.createElement("div");
+    setupCard.className = "d-card d-card-wide";
+    setupCard.innerHTML = `
+      <p class="d-label">Create your profile</p>
+      <div id="setup-msg" class="msg"></div>
+      <input type="text" class="d-field" id="setup-name" placeholder="Your name" value="${(user.displayName||"").replace(/"/g,'&quot;')}">
+      <select class="d-field" id="setup-cluster">
+        <option value="" disabled selected>Select your cluster</option>
+        ${clusterOptions.map(c=>`<option value="${c}">${c}</option>`).join("")}
+      </select>
+      <button class="d-btn" id="setup-submit" style="background:#4C6FFF;">Create profile</button>
+    `;
+    widgetsEl.appendChild(setupCard);
+
+    document.getElementById("setup-submit").addEventListener("click", async ()=>{
+      const msgEl = document.getElementById("setup-msg");
+      const name = document.getElementById("setup-name").value.trim();
+      const cluster = document.getElementById("setup-cluster").value;
+      if(!name){ showMsg(msgEl,"Please enter your name.","error"); return; }
+      if(!cluster){ showMsg(msgEl,"Please select a cluster.","error"); return; }
+
+      const newProfile = {
+        name,
+        cluster,
+        email: user.email || "",
+        createdAt: serverTimestamp()
+      };
+
+      try{
+        await setDoc(doc(db,"users",user.uid), newProfile);
+        setupCard.remove();
+        resolve(newProfile);
+      } catch(err){
+        showMsg(msgEl, err.message.replace("Firebase: ",""), "error");
+      }
+    });
+  });
 }
 
 const cluster = profile.cluster;
