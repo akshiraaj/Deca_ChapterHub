@@ -26,6 +26,6 @@ export const CLUSTER_META = {
   "Marketing": { color: "#993556", badge: "/assets/marketing-monkeys.svg", nickname: "Monkey" },
   "Hospitality & Tourism": { color: "#185FA5", badge: "/assets/hospitality.svg", nickname: "Horse" },
   "Business Management & Administration": { color: "#BA7517", badge: "/assets/admin-alligators.svg", nickname: "Alligator" },
-  "Entrepreneurship": { color: "#534AB7", badge: "/assets/entrepreneurship.svg", nickname: "Phoenix" },
+  "Entrepreneurship": { color: "#534AB7", badge: "/assets/Entrepreneurship.svg", nickname: "Phoenix" },
   "Principles": { color: "#D85A30", badge: "/assets/principles.svg", nickname: "Wolf" }
 };
