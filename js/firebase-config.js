@@ -22,39 +22,10 @@ export const CLUSTERS = [
 ];
 
 export const CLUSTER_META = {
-  "Finance": {
-    color: "#639922",
-    badge: "../assets/finance-foxes.svg",
-    nickname: "Fox"
-  },
-
-  "Marketing": {
-    color: "#993556",
-    badge: "../assets/marketing-monkeys.svg",
-    nickname: "Monkey"
-  },
-
-  "Hospitality & Tourism": {
-    color: "#185FA5",
-    badge: "../assets/hospitality.svg",
-    nickname: "Horse"
-  },
-
-  "Business Management & Administration": {
-    color: "#BA7517",
-    badge: "../assets/admin-alligators.svg",
-    nickname: "Alligator"
-  },
-
-  "Entrepreneurship": {
-    color: "#534AB7",
-    badge: "../assets/Entrepreneurship.svg",
-    nickname: "Phoenix"
-  },
-
-  "Principles": {
-    color: "#D85A30",
-    badge: "../assets/principles.svg",
-    nickname: "Wolf"
-  }
+  "Finance": { color: "#639922", badge: "/Assets/finance-foxes.svg", nickname: "Fox" },
+  "Marketing": { color: "#993556", badge: "/Assets/marketing-monkeys.svg", nickname: "Monkey" },
+  "Hospitality & Tourism": { color: "#185FA5", badge: "/Assets/hospitality.svg", nickname: "Horse" },
+  "Business Management & Administration": { color: "#BA7517", badge: "/Assets/admin-alligators.svg", nickname: "Alligator" },
+  "Entrepreneurship": { color: "#534AB7", badge: "/Assets/Entrepreneurship.svg", nickname: "Phoenix" },
+  "Principles": { color: "#D85A30", badge: "/Assets/principles.svg", nickname: "Wolf" }
 };
